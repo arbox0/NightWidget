@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="Monitor">
+        <ListPreference
+        android:key="monitor_type"
+        android:disableDependentsState="false"
+        android:title="Type"
+        android:summary="Select item from array"
+        android:entries="@array/types"
+        android:entryValues="@array/types_values"
+        android:defaultValue="1"
+        />
+        <EditTextPreference
+            android:title="Medtronic CGM ID"
+            android:key="medtronic_cgm_id"
+            android:dialogTitle="Enter your CGM ID"/>
+         <ListPreference
+        android:key="refreshPeriod"
+        android:disableDependentsState="false"
+        android:title="Widget Refresh Period"
+        android:summary="Select item from array"
+        android:entries="@array/refreshPeriodList"
+        android:entryValues="@array/refreshperiod_values"
+        android:defaultValue="2"
+        />
+        <ListPreference
+        android:key="reservoir_ins_units"
+        android:disableDependentsState="false"
+        android:title="Max. insulin units"
+        android:summary="Select item from array"
+        android:entries="@array/reservoir_units"
+        android:entryValues="@array/types_values"
+        android:defaultValue="2"
+        />
+        <SwitchPreference
+	            android:title="Activate Alarms"
+	            android:key="alarms_active"
+	            android:disableDependentsState="false"
+	            android:defaultValue="true"
+	            android:switchTextOn="ON"
+	            android:switchTextOff="OFF"
+	            android:summaryOn="Activated. Widget alarms are active, a sound alert will be raised on customizable conditions"
+	            android:summaryOff="Deactivated. No alarms will be raised.">
+	    </SwitchPreference>
+       <PreferenceScreen
+        android:key="alert_thresholds"
+        android:dependency="alarms_active"
+        android:title="@string/alert_thresholds"
+        android:persistent="false">
+        <SwitchPreference
+	            android:title="Conn. lost alarm"
+	            android:key="alarm_lost"
+	            android:disableDependentsState="false"
+	            android:defaultValue="true"
+	            android:switchTextOn="ON"
+	            android:switchTextOff="OFF"
+	            android:summaryOn="A sound alert will be raised when no new data is received for a 'user configurable' time "
+	            android:summaryOff="No sound alert will be raised when no new data is received for a 'user configurable' time">
+	    </SwitchPreference>
+	    <RingtonePreference
+		    android:title="Choose Alarm Sound"
+		    android:dependency="alarm_lost"
+		    android:key="alarmlost_ringtone"
+		    android:ringtoneType="all"
+		    android:showDefault="true"
+		    android:showSilent="false"
+		    android:defaultValue="content://settings/system/notification_sound"
+		    />
+	      <ListPreference
+	        android:key="minrefreshPeriod"
+	        android:disableDependentsState="false"
+	        android:title="Time Threshold"
+	        android:summary="Select item from array"
+	        android:entries="@array/timeList"
+	        android:entryValues="@array/refreshperiod_values"
+	        android:defaultValue="2"
+	        />
+	       <SwitchPreference
+	            android:title="Alarm on error values"
+	            android:key="alarm_error"
+	            android:disableDependentsState="false"
+	            android:defaultValue="false"
+	            android:switchTextOn="ON"
+	            android:switchTextOff="OFF"
+	            android:summaryOn="A sound alert will be raised when a strange/error value is received in sgv data"
+	            android:summaryOff="No sound alert will be raised when a strange/error value is received in sgv data">
+	    </SwitchPreference>
+	    <RingtonePreference
+		    android:title="Choose Alarm Sound"
+		    android:dependency="alarm_error"
+		    android:key="alarmerror_ringtone"
+		    android:ringtoneType="all"
+		    android:showDefault="true"
+		    android:showSilent="false"
+		    android:defaultValue="content://settings/system/notification_sound"
+		    />
+         <SwitchPreference
+	            android:title="Sound Alarm"
+	            android:key="sound_alarm"
+	            android:disableDependentsState="false"
+	            android:defaultValue="true"
+	            android:switchTextOn="ON"
+	            android:switchTextOff="OFF"
+	            android:summaryOn="A sound alert will be raised when alarm thresholds are exceeded"
+	            android:summaryOff="No sound alert will be raised when alarm thresholds are exceeded">
+	    </SwitchPreference>
+	    <RingtonePreference
+		    android:title="Choose Alarm Sound"
+		    android:dependency="sound_alarm"
+		    android:key="alarm_ringtone"
+		    android:ringtoneType="all"
+		    android:showDefault="true"
+		    android:showSilent="false"
+		    android:defaultValue="content://settings/system/notification_sound"
+		    />
+	    <SwitchPreference
+	            android:title="Sound Warning"
+	            android:key="sound_warning"
+	            android:disableDependentsState="false"
+	            android:switchTextOn="ON"
+	            android:switchTextOff="OFF"
+	            android:defaultValue="false"
+	            android:summaryOn="A sound alert will be raised when warning thresholds are exceeded"
+	            android:summaryOff="No sound alert will be raised when warning thresholds are exceeded">
+	    </SwitchPreference>
+	    <RingtonePreference
+		    android:title="Choose Warning Sound"
+		     android:dependency="sound_warning"
+		    android:key="warning_ringtone"
+		    android:showDefault="true"
+		    android:showSilent="false"
+		    android:defaultValue="content://settings/system/notification_sound"
+		    android:ringtoneType="all"/>
+         <EditTextPreference
+            android:title="@string/upper_warning"
+            android:key="upper_warning_color"
+            android:dialogTitle="Upper warning Threshold (YELLOW)"
+            android:inputType="number"
+            android:defaultValue="@string/upper_warning_defval"/>
+          <EditTextPreference
+            android:title="@string/lower_warning"
+            android:key="lower_warning_color"
+            android:defaultValue="@string/lower_warning_defval"
+            android:dialogTitle="Lower warning threshold (YELLOW)"
+            android:inputType="number"/>
+           <EditTextPreference
+            android:title="@string/upper_alarm"
+            android:key="upper_alarm_color"
+            android:defaultValue="@string/upper_alarm_defval"
+            android:dialogTitle="Upper alarm threshold (RED)"
+            android:inputType="number"/>
+            <EditTextPreference
+            android:title="@string/lower_alarm"
+            android:key="lower_alarm_color"
+            android:defaultValue="@string/lower_alarm_defval"
+            android:dialogTitle="Lower alarm threshold (RED)"
+            android:inputType="number"/>
+        </PreferenceScreen>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Sharing">    
+    <EditTextPreference
+            android:title="MongoDB URI"
+            android:key="MongoDB URI"
+            android:dialogTitle="Enter MongoDB URI"
+            android:dialogMessage="Replace example values in {}'s with your correct values"
+            android:defaultValue="mongodb://{user}:{password}@{host}.mongolab.com:{11111}/{database}">
+    </EditTextPreference>
+    <EditTextPreference
+            android:title="Collection Name"
+            android:key="Collection Name"
+            android:dialogTitle="Enter Collection Name"
+            android:dialogMessage="This is the name of the collection where the CGM data is stored">
+    </EditTextPreference>
+    <!--  <EditTextPreference
+            android:title="Glucometer Data Collection Name"
+            android:key="gcdCollectionName"
+            android:dialogTitle="Enter Collection Name"
+            android:dialogMessage="This is the name of the collection where the glucometer data is stored">
+    </EditTextPreference>-->
+     <EditTextPreference
+            android:title="WEB URI"
+            android:key="web_uri"
+            android:dialogTitle="Enter WEB URI"
+            android:dialogMessage="Please, write the web address where your nightscout page is published"
+            android:defaultValue="http://{yourwebname}.azurewebsites.net">
+    </EditTextPreference>
+    </PreferenceCategory>
+     <PreferenceCategory android:title="Disclaimer">
+	    <SwitchPreference
+	            android:title="I UNDERSTAND"
+	            android:key="IUNDERSTAND"
+	            android:disableDependentsState="false"
+	            android:switchTextOn="YES"
+	            android:switchTextOff="NO"
+	            android:summaryOn="Activated. Nightwidget should not be used to make medical decisions. There is no support or any warranty of any kind. The quality and performance of the project is with you. This is a project that was created and is supported completely by volunteers"
+	            android:summaryOff="Deactivated. Nightwidget should not be used to make medical decisions. There is no support or any warranty of any kind. The quality and performance of the project is with you. This is a project that was created and is supported completely by volunteers">
+	    </SwitchPreference>
+    </PreferenceCategory>
+</PreferenceScreen>

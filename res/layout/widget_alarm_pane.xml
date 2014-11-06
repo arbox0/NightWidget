@@ -1,0 +1,43 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/FrameLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/background_dark"
+    android:padding="@dimen/widget_margin" >
+
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center"
+        android:text="@string/close" />
+
+    <ImageView
+        android:id="@+id/alerticon"
+        android:layout_width="133dp"
+        android:contentDescription="@string/alert"
+        android:layout_height="133dp"
+        android:layout_gravity="top|center"
+        android:layout_marginTop="50dp"
+        android:src="@drawable/red_warning" />
+
+    <TextView
+        android:id="@+id/alarm_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center"
+        android:layout_marginTop="200dp"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+    <TextView
+        android:id="@+id/alarm_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center"
+        android:layout_marginTop="220dp"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+  
+
+</FrameLayout>

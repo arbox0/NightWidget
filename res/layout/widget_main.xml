@@ -1,0 +1,146 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/background_dark"
+    android:orientation="vertical"
+    android:padding="@dimen/widget_margin" >
+	<LinearLayout 
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:background="@android:color/background_dark"
+	    android:orientation="horizontal">
+	    <ImageButton
+        android:id="@+id/imageButton1"
+        android:layout_width="44dp"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:contentDescription="@string/but_contentDesc"
+        android:src="@drawable/ic_launcher" />
+	    <TextView
+	        android:id="@+id/sgv_id"
+	        android:layout_width="wrap_content"
+	        android:layout_height="match_parent"
+	        android:text="@string/arrow_none"
+	        android:textColor="#ffffff"
+	        android:textSize="40sp"
+	        android:gravity="center_vertical|right" />
+	    <TextView
+	        android:id="@+id/arrow_id"
+	        android:layout_width="wrap_content"
+	        android:layout_height="match_parent"
+	        android:text="@string/arrow_none"
+	        android:textColor="#ffffff"
+	        android:textSize="24sp" 
+	        android:gravity="center_vertical|right"/>
+	    <LinearLayout
+            android:id="@+id/LinearLayout1"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" 
+            android:layout_marginLeft="2dp">
+
+            <ImageButton
+                android:id="@+id/devBattery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#000000"
+                android:contentDescription="@string/device_battery"
+                android:gravity="center_vertical|right"
+                android:minHeight="40dp"
+                android:minWidth="40dp"
+                android:src="@drawable/battery_full_icon" />
+
+            <TextView
+                android:id="@+id/device_battery_text_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|left"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="-15dp"
+                android:gravity="bottom"
+                android:text="@string/default_dev_batt"
+                android:textColor="#ffffff"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+	    <LinearLayout
+            android:id="@+id/relativeInslayout"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" >
+
+            <ImageButton
+                android:id="@+id/resIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#000000"
+                android:contentDescription="@string/device_battery"
+                android:gravity="center_vertical|right"
+                android:minHeight="40dp"
+                android:minWidth="40dp"
+                android:src="@drawable/res_full" />
+
+            <TextView
+                android:id="@+id/insulin_data_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|left"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="-15dp"
+                android:gravity="bottom"
+                android:text="@string/insulin_data_default"
+                android:textColor="#ffffff"
+                android:textSize="12sp" />
+    
+        </LinearLayout>
+	</LinearLayout>
+	<LinearLayout 
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:background="@android:color/background_dark"
+	    android:orientation="horizontal">
+     <TextView
+        android:id="@+id/phone_battery_label_id"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical|right"
+        android:text="@string/phone_battlabel"
+        android:textSize="14sp"
+        android:textColor="#ffffff"/>
+	<LinearLayout
+            android:id="@+id/relativelayout2"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" >
+
+            <ImageButton
+                android:id="@+id/phoneBattery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#000000"
+                android:contentDescription="@string/phone_battery"
+                android:gravity="center_vertical|right"
+                android:minHeight="40dp"
+                android:minWidth="40dp"
+                android:src="@drawable/battery_full_icon" />
+
+            <TextView
+                android:id="@+id/phone_battery_text_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|left"
+                android:layout_marginLeft="-15dp"
+                android:gravity="bottom"
+                android:text="@string/default_phone_batt"
+                android:textColor="#ffffff"
+                android:textSize="12sp" />
+             <TextView
+	        android:id="@+id/minute_id"
+	        android:layout_width="wrap_content"
+	        android:layout_height="match_parent"
+	        android:text="@string/arrow_none"
+	        android:textColor="#ffffff"
+	        android:textSize="16sp"
+	        android:gravity="center" />
+       </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
