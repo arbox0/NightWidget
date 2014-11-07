@@ -151,22 +151,24 @@ public class SettingsFragment extends PreferenceFragment implements
 					Object newValue) {
 				final String val = newValue.toString();
 				int index = metric_type.findIndexOfValue(val);
-				int divisor = 1;
+				double divisor = 1;
 				if (index == 1)
 					divisor = 18;
-				int upperwarning = 0;
-				int lowerwarning = 0;
-				int upperalarm = 0;
-				int loweralarm = 0;
+				else 
+					divisor = 1.0/18.0;
+				double upperwarning = 0;
+				double lowerwarning = 0;
+				double upperalarm = 0;
+				double loweralarm = 0;
 				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 				SharedPreferences.Editor editor = prefs.edit();
 				try {
 					upperwarning = Integer.parseInt(prefs.getString(
 							"upper_warning_color", ""+((int)(140))));
-					editor.putString("upper_warning_color", ""+upperwarning/divisor);
+					editor.putString("upper_warning_color", ""+((int)Math.ceil(upperwarning/divisor)));
 					Preference p = findPreference("upper_warning_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+upperwarning/divisor);
+					editTextPref.setText( ""+((int)(Math.ceil(upperwarning/divisor))));
 					p.setSummary(editTextPref.getText());
 				} catch (Exception e) {
 
@@ -174,10 +176,10 @@ public class SettingsFragment extends PreferenceFragment implements
 				try {
 					lowerwarning = Integer.parseInt(prefs.getString(
 							"lower_warning_color", ""+((int)(80))));
-					editor.putString("lower_warning_color", ""+lowerwarning/divisor);
+					editor.putString("lower_warning_color", ""+((int)Math.floor(lowerwarning/divisor)));
 					Preference p = findPreference("lower_warning_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+lowerwarning/divisor);
+					editTextPref.setText( ""+((int)Math.floor(lowerwarning/divisor)));
 					p.setSummary(editTextPref.getText());
 
 				} catch (Exception e) {
@@ -187,10 +189,10 @@ public class SettingsFragment extends PreferenceFragment implements
 					upperalarm = Integer.parseInt(prefs.getString(
 							"upper_alarm_color", ""+((int)(170))));
 					
-					editor.putString("upper_alarm_color", ""+upperalarm/divisor);
+					editor.putString("upper_alarm_color", ""+((int)Math.ceil(upperalarm/divisor)));
 					Preference p = findPreference("upper_alarm_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+upperalarm/divisor);
+					editTextPref.setText( ""+((int)Math.ceil(upperalarm/divisor)));
 					p.setSummary(editTextPref.getText());
 				} catch (Exception e) {
 
@@ -198,10 +200,10 @@ public class SettingsFragment extends PreferenceFragment implements
 				try {
 					loweralarm = Integer.parseInt(prefs.getString(
 							"lower_alarm_color", ""+((int)(70))));
-					editor.putString("lower_alarm_color", ""+loweralarm/divisor);
+					editor.putString("lower_alarm_color", ""+((int)Math.floor(loweralarm/divisor)));
 					Preference p = findPreference("lower_alarm_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+loweralarm/divisor);
+					editTextPref.setText( ""+((int)Math.floor(loweralarm/divisor)));
 					p.setSummary(editTextPref.getText());
 				} catch (Exception e) {
 
