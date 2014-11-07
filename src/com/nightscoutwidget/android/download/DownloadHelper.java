@@ -386,7 +386,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						if (calib.indexOf("NC") >= 0 || calib.indexOf("DB")>=0)
 							sgv =calib;
 					}
-					processSGVValue(sgv, views);
+					sgv = processSGVValue(sgv, views);
 				}else if ("".equals(sgv) || "---".equals(sgv)){
 					if (cgmSelected == Constants.MEDTRONIC_CGM)
 						calib = Constants.getWidgetCalAppend(calibrationStatus);
@@ -557,16 +557,20 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 * @param sgv, last sgv value
 	 * @param views, access to the Widget UI.
 	 */
-	private void processSGVValue(String sgv, RemoteViews views) {
+	private String processSGVValue(String sgv, RemoteViews views) {
 		Log.i("processSGVValue", "processSGVValue " + sgv);
 		Integer sgvInt = -1;
 		boolean alarms_active = prefs.getBoolean("alarms_active", true);
-		
+		int divisor = 1;
+		if (prefs.getString("metric_preference","1").equals("2"))
+			divisor = 18;
 		try {
 			if (alarms_active){
-				if (!Constants.checkSgvErrorValue(sgv))
+				if (!Constants.checkSgvErrorValue(sgv)){
 					sgvInt = Integer.parseInt(sgv);
-				else{
+					if (prefs.getString("metric_preference","1").equals("2"))
+						sgvInt = (int)sgvInt/divisor;
+				}else{
 					boolean alarm_error = prefs.getBoolean("alarm_error", false);
 					boolean errorsgv_raised = prefs.getBoolean("error_sgvraised", false);
 					String alarmerror_ringtone = prefs.getString("alarmerror_ringtone", "");
@@ -593,7 +597,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		Log.i("processSGVValue", "processSGVValueINT " + sgvInt);
 		if (sgvInt <= 0) {
 			views.setTextColor(R.id.sgv_id, Color.WHITE);
-			return;
+			return sgv;
 		} else {
 			Log.i("processSGVValue", "processSGVValueInside!! ");
 			boolean sound_alarm = prefs.getBoolean("sound_alarm", true);
@@ -607,28 +611,29 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			int upperalarm = 0;
 			int loweralarm = 0;
 			int color = Color.WHITE;
+			
 			try {
 				upperwarning = Integer.parseInt(prefs.getString(
-						"upper_warning_color", "140"));
+						"upper_warning_color", ""+((int)(140/divisor))));
 			} catch (Exception e) {
 
 			}
 			try {
 				lowerwarning = Integer.parseInt(prefs.getString(
-						"lower_warning_color", "80"));
+						"lower_warning_color", ""+((int)(80/divisor))));
 			} catch (Exception e) {
 
 			}
 			try {
 				upperalarm = Integer.parseInt(prefs.getString(
-						"upper_alarm_color", "170"));
+						"upper_alarm_color", ""+((int)(170/divisor))));
 
 			} catch (Exception e) {
 
 			}
 			try {
 				loweralarm = Integer.parseInt(prefs.getString(
-						"lower_alarm_color", "70"));
+						"lower_alarm_color", ""+((int)(70/divisor))));
 			} catch (Exception e) {
 
 			}
@@ -669,7 +674,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.putBoolean("alarmRaised", true);
 					editor.putInt("alarmType", Constants.ALARM);
-					editor.putString("sgv", sgv);
+					editor.putString("sgv", ""+sgvInt);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
@@ -686,7 +691,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.putInt("alarmType", Constants.WARNING);
 					editor.putBoolean("warningRaised", true);
-					editor.putString("sgv", sgv);
+					editor.putString("sgv", ""+sgvInt);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
@@ -708,6 +713,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			}
 
 		}
+		return ""+ sgvInt;
 	}
 	/**
 	 * Changes the arrow label, to the arrow icon.

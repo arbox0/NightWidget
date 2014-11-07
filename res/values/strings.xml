@@ -46,6 +46,10 @@
      <item>Dexcom G4</item>
      <item>Medtronic CGM</item>
     </string-array>
+    <string-array name="metric_types">
+     <item>mg/dl</item>
+     <item>mmol/l</item>
+    </string-array>
     <string-array name="reservoir_units">
      <item>176</item>
      <item>300</item>

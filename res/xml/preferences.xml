@@ -32,6 +32,15 @@
         android:entryValues="@array/types_values"
         android:defaultValue="2"
         />
+         <ListPreference
+        android:key="metric_preference"
+        android:disableDependentsState="false"
+        android:title="SGV Metric"
+        android:summary="Select item from array"
+        android:entries="@array/metric_types"
+        android:entryValues="@array/types_values"
+        android:defaultValue="1"
+        />
         <SwitchPreference
 	            android:title="Activate Alarms"
 	            android:key="alarms_active"

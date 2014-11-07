@@ -3,6 +3,7 @@ package com.nightscoutwidget.android.settings;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
@@ -13,6 +14,7 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.preference.RingtonePreference;
+import android.util.Log;
 
 import com.nightscoutwidget.android.R;
 
@@ -121,6 +123,8 @@ public class SettingsFragment extends PreferenceFragment implements
 		final ListPreference mon_type = (ListPreference) findPreference("monitor_type");
 		final EditTextPreference med_id = (EditTextPreference) findPreference("medtronic_cgm_id");
 		final ListPreference res_units = (ListPreference) findPreference("reservoir_ins_units");
+		final ListPreference metric_type = (ListPreference) findPreference("metric_preference");
+		
 		int index = mon_type.findIndexOfValue(mon_type.getValue());
 
 		if (index == 1) {
@@ -142,5 +146,70 @@ public class SettingsFragment extends PreferenceFragment implements
 				return true;
 			}
 		});
+		metric_type.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+			public boolean onPreferenceChange(Preference preference,
+					Object newValue) {
+				final String val = newValue.toString();
+				int index = metric_type.findIndexOfValue(val);
+				int divisor = 1;
+				if (index == 1)
+					divisor = 18;
+				int upperwarning = 0;
+				int lowerwarning = 0;
+				int upperalarm = 0;
+				int loweralarm = 0;
+				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+				SharedPreferences.Editor editor = prefs.edit();
+				try {
+					upperwarning = Integer.parseInt(prefs.getString(
+							"upper_warning_color", ""+((int)(140))));
+					editor.putString("upper_warning_color", ""+upperwarning/divisor);
+					Preference p = findPreference("upper_warning_color");
+					EditTextPreference editTextPref = (EditTextPreference) p;
+					editTextPref.setText( ""+upperwarning/divisor);
+					p.setSummary(editTextPref.getText());
+				} catch (Exception e) {
+
+				}
+				try {
+					lowerwarning = Integer.parseInt(prefs.getString(
+							"lower_warning_color", ""+((int)(80))));
+					editor.putString("lower_warning_color", ""+lowerwarning/divisor);
+					Preference p = findPreference("lower_warning_color");
+					EditTextPreference editTextPref = (EditTextPreference) p;
+					editTextPref.setText( ""+lowerwarning/divisor);
+					p.setSummary(editTextPref.getText());
+
+				} catch (Exception e) {
+
+				}
+				try {
+					upperalarm = Integer.parseInt(prefs.getString(
+							"upper_alarm_color", ""+((int)(170))));
+					
+					editor.putString("upper_alarm_color", ""+upperalarm/divisor);
+					Preference p = findPreference("upper_alarm_color");
+					EditTextPreference editTextPref = (EditTextPreference) p;
+					editTextPref.setText( ""+upperalarm/divisor);
+					p.setSummary(editTextPref.getText());
+				} catch (Exception e) {
+
+				}
+				try {
+					loweralarm = Integer.parseInt(prefs.getString(
+							"lower_alarm_color", ""+((int)(70))));
+					editor.putString("lower_alarm_color", ""+loweralarm/divisor);
+					Preference p = findPreference("lower_alarm_color");
+					EditTextPreference editTextPref = (EditTextPreference) p;
+					editTextPref.setText( ""+loweralarm/divisor);
+					p.setSummary(editTextPref.getText());
+				} catch (Exception e) {
+
+				}
+				editor.commit();
+				return true;
+			}
+		});
+		
 	}
 }
