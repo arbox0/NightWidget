@@ -28,6 +28,7 @@ public class AlertActivity extends Activity {
 	AudioManager mAudioManager;
 	Vibrator vibrator = null;
 	int userVolume;
+	boolean vibrationActive = true;
 	
 	/**
 	 * Creates activity.
@@ -45,13 +46,17 @@ public class AlertActivity extends Activity {
         String alarmerror_ringtone = prefs.getString("alarmerror_ringtone", "");
 		String warning_ringtone = prefs.getString("warning_ringtone", "");
 		String sgv = prefs.getString("sgv", "");
+		vibrationActive = prefs.getBoolean("vibrationActive", true);
 		int type = prefs.getInt("alarmType", Constants.CONNECTION_LOST);
 		
-        //Start the vibration
-        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
-        //start vibration with repeated count, use -1 if you don't want to repeat the vibration
-        vibrator.vibrate(pattern, 0); 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|
+		if (vibrationActive){
+	        //Start the vibration
+	        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+	        //start vibration with repeated count, use -1 if you don't want to repeat the vibration
+	        vibrator.vibrate(pattern, 0);
+		}
+        
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|
                 WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD|
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED|
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
@@ -87,7 +92,9 @@ public class AlertActivity extends Activity {
             public void onClick(View v) {
             	if (mMediaPlayer != null){
             		stopSound();
-            		vibrator.cancel();
+            		if (vibrationActive){
+	            	    vibrator.cancel();
+            		}
             		mMediaPlayer = null;
             	}
             	finish();
@@ -97,7 +104,7 @@ public class AlertActivity extends Activity {
 	    	 Uri alert =  Uri.parse(ringTone);
 	    	 mMediaPlayer = new MediaPlayer();
 	    	 mMediaPlayer.setDataSource(this, alert);
-	    	 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+	    	 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 	    	 mMediaPlayer.setLooping(true);
 	    	 mMediaPlayer.prepare();
 	    	 mMediaPlayer.start();
@@ -111,7 +118,7 @@ public class AlertActivity extends Activity {
      */
     public void stopSound(){
     	// reset the volume to what it was before we changed it.
-	    mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, userVolume, AudioManager.FLAG_PLAY_SOUND);
+	    mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, userVolume, AudioManager.FLAG_PLAY_SOUND);
 	    mMediaPlayer.stop();
 	    mMediaPlayer.reset();
 
@@ -131,7 +138,8 @@ public class AlertActivity extends Activity {
     public void onDestroy(){
     	if (mMediaPlayer != null){
     		stopSound();
-    		vibrator.cancel();
+    		if (vibrationActive)
+    			vibrator.cancel();
     		mMediaPlayer = null;
     	}
     	super.onDestroy();

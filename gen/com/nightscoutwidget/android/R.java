@@ -9,12 +9,13 @@ package com.nightscoutwidget.android;
 
 public final class R {
     public static final class array {
-        public static final int refreshPeriodList=0x7f080003;
-        public static final int refreshperiod_values=0x7f080005;
-        public static final int reservoir_units=0x7f080001;
-        public static final int timeList=0x7f080004;
+        public static final int metric_types=0x7f080001;
+        public static final int refreshPeriodList=0x7f080004;
+        public static final int refreshperiod_values=0x7f080006;
+        public static final int reservoir_units=0x7f080002;
+        public static final int timeList=0x7f080005;
         public static final int types=0x7f080000;
-        public static final int types_values=0x7f080002;
+        public static final int types_values=0x7f080003;
     }
     public static final class attr {
     }

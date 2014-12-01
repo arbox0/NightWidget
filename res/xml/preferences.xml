@@ -11,9 +11,9 @@
         android:defaultValue="1"
         />
         <EditTextPreference
-            android:title="Medtronic CGM ID"
+            android:title="Pump ID"
             android:key="medtronic_cgm_id"
-            android:dialogTitle="Enter your CGM ID"/>
+            android:dialogTitle="Enter your Guardian/Pump ID"/>
          <ListPreference
         android:key="refreshPeriod"
         android:disableDependentsState="false"
@@ -50,6 +50,16 @@
 	            android:switchTextOff="OFF"
 	            android:summaryOn="Activated. Widget alarms are active, a sound alert will be raised on customizable conditions"
 	            android:summaryOff="Deactivated. No alarms will be raised.">
+	    </SwitchPreference>
+	    <SwitchPreference
+	            android:title="Activate Alert Vibration"
+	            android:key="vibration_active"
+	            android:dependency="alarms_active"
+	            android:defaultValue="true"
+	            android:switchTextOn="ON"
+	            android:switchTextOff="OFF"
+	            android:summaryOn="Activated. The phone will vibrate when an alarm/warning is raised."
+	            android:summaryOff="Deactivated. The phone will NOT vibrate when an alarm/warning is raised.">
 	    </SwitchPreference>
        <PreferenceScreen
         android:key="alert_thresholds"

@@ -603,7 +603,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			boolean sound_alarm = prefs.getBoolean("sound_alarm", true);
 			boolean sound_warning = prefs.getBoolean("sound_warning", false);
 			boolean alarmRaised = prefs.getBoolean("alarmRaised", false);
-			boolean warningRaised = prefs.getBoolean("alarmRaised", false);
+			boolean warningRaised = prefs.getBoolean("warningRaised", false);
 			String alarm_ringtone = prefs.getString("alarm_ringtone", "");
 			String warning_ringtone = prefs.getString("warning_ringtone", "");
 			int upperwarning = 0;
