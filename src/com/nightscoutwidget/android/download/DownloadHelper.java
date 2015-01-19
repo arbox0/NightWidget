@@ -1,9 +1,9 @@
 package com.nightscoutwidget.android.download;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
-
-import javax.net.ssl.ManagerFactoryParameters;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,7 +28,11 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientOptions.Builder;
 import com.mongodb.MongoClientURI;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 import com.nightscoutwidget.android.R;
 import com.nightscoutwidget.android.alerts.AlertActivity;
 import com.nightscoutwidget.android.medtronic.Constants;
@@ -90,7 +94,52 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 				// connect to db
 				MongoClientURI uri = new MongoClientURI(dbURI.trim());
-				client = new MongoClient(uri);
+				Builder b = MongoClientOptions.builder();
+                b.heartbeatConnectTimeout(60000);
+                b.heartbeatSocketTimeout(60000);
+                b.maxWaitTime(60000);
+                boolean bAchieved = false;
+                String user = "";
+                String password = "";
+                String source = "";
+                String host = "";
+                String port = "";
+                int iPort = -1;
+                if  (dbURI.length() > 0){
+                	String[] splitted = dbURI.split(":");
+                	if (splitted.length >= 4 ){
+                		user = splitted[1].substring(2);
+                		if (splitted[2].indexOf("@") < 0)
+                			bAchieved = false;
+                		else{
+                			password = splitted[2].substring(0,splitted[2].indexOf("@"));
+                			host = splitted[2].substring(splitted[2].indexOf("@")+1, splitted[2].length());
+                			if (splitted[3].indexOf("/") < 0)
+                				bAchieved = false;
+                			else{
+                				port = splitted[3].substring(0, splitted[3].indexOf("/"));
+                				source = splitted[3].substring(splitted[3].indexOf("/")+1, splitted[3].length());
+                				try{
+                				iPort = Integer.parseInt(port);
+                				}catch(Exception ne){
+                					iPort = -1;
+                				}
+                				if (iPort > -1)
+                					bAchieved = true;
+                			}
+                		}
+                	}
+                }
+                if (bAchieved){
+	                MongoCredential mc = MongoCredential.createMongoCRCredential(user, source , password.toCharArray());
+	                ServerAddress  sa = new ServerAddress(host, iPort);
+	                List<MongoCredential> lcredential = new ArrayList<MongoCredential>();
+	                lcredential.add(mc);
+	                if (sa != null && sa.getHost() != null && sa.getHost().indexOf("localhost") < 0){
+	                	client = new MongoClient(sa, lcredential, b.build());
+	                	
+	                }
+                }
 
 				// get db
 				DB db = client.getDB(uri.getDatabase());
@@ -383,14 +432,17 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					if (isCalibrating)
 						calib = "*";
 					else{
-						if (cgmSelected == Constants.MEDTRONIC_CGM)
-							calib = Constants.getWidgetCalAppend(calibrationStatus);
-						else
+						if (cgmSelected == Constants.MEDTRONIC_CGM){
+							if (sgv.indexOf("NC") < 0 || sgv.indexOf("DB")<0)
+								calib = Constants.getWidgetCalAppend(calibrationStatus);
+						}else
 							calib = "";
-						if (calib.indexOf("NC") >= 0 || calib.indexOf("DB")>=0)
-							sgv =calib;
+						
 					}
-					sgv = processSGVValue(sgv, views);
+					if (calib.indexOf("NC") >= 0 || calib.indexOf("DB")>=0)
+						sgv = calib;
+					else
+						sgv = processSGVValue(sgv, views);
 				}else if ("".equals(sgv) || "---".equals(sgv)){
 					if (cgmSelected == Constants.MEDTRONIC_CGM)
 						calib = Constants.getWidgetCalAppend(calibrationStatus);
@@ -448,7 +500,10 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			calib = "";
 			sgv = "W_Up";
 		}
-		views.setTextViewText(R.id.sgv_id, sgv + calib);
+		if (calib.indexOf("NC") >= 0 || calib.indexOf("DB")>=0)
+			views.setTextViewText(R.id.sgv_id, calib);
+		else
+			views.setTextViewText(R.id.sgv_id, sgv + calib);
 		long date = 0;
 		if (result.has("date")) {
 			try {
@@ -522,7 +577,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				}
 			} else {
 				views.setInt(R.id.sgv_id, "setPaintFlags",
-						Paint.ANTI_ALIAS_FLAG);
+						Paint.ANTI_ALIAS_FLAG ); //TODO: I have to test this improvement--> | (~ Paint.STRIKE_THRU_TEXT_FLAG));
 				if (diff < Constants.TIME_10_MIN_IN_MS) {
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.remove("lostTimeAlarmRaised");
