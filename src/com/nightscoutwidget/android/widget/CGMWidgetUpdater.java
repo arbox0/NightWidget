@@ -18,6 +18,7 @@ import android.net.Uri;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import com.nightscoutwidget.android.R;
@@ -77,6 +78,12 @@ public class CGMWidgetUpdater extends Service {
 				.getSystemService(Context.KEYGUARD_SERVICE);
 		if (myKM.inKeyguardRestrictedInputMode()) {
 			views = new RemoteViews(getPackageName(), R.layout.widget_main);
+			if (prefs.getBoolean("showIcon", true)){
+    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+    		}else{
+    			views.setViewVisibility(R.id.imageButton1, View.GONE);
+    		}
+
 		} else {
 			views = new RemoteViews(getPackageName(), R.layout.widget_main);
 			String webUri = null;
@@ -91,6 +98,12 @@ public class CGMWidgetUpdater extends Service {
 						getBaseContext(), 7, intent, 0);
 				views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
 			}
+			if (prefs.getBoolean("showIcon", true)){
+    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+    		}else{
+    			views.setViewVisibility(R.id.imageButton1, View.GONE);
+    		}
+
 		}
 		if (!iUnderstand) {
 			views.setTextViewText(R.id.sgv_id, "Please, Accept Disclaimer!!");

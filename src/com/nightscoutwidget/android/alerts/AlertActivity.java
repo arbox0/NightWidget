@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
@@ -38,7 +39,7 @@ public class AlertActivity extends Activity {
         super.onCreate(icicle);
         prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         //Set the pattern for vibration   
-        long pattern[]={0,200,100,300,400};
+        long pattern[]={1000,300};
         String label = "ALARM";
         String text = "Connection Lost!";
         String ringTone = prefs.getString("alarmlost_ringtone", "");
@@ -48,8 +49,9 @@ public class AlertActivity extends Activity {
 		String sgv = prefs.getString("sgv", "");
 		vibrationActive = prefs.getBoolean("vibrationActive", true);
 		int type = prefs.getInt("alarmType", Constants.CONNECTION_LOST);
-		
+		Log.i("MEDTRONIC","EOOOOO FUERA");
 		if (vibrationActive){
+			Log.i("MEDTRONIC","EOOOOO DENTRO");
 	        //Start the vibration
 	        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 	        //start vibration with repeated count, use -1 if you don't want to repeat the vibration
@@ -66,7 +68,7 @@ public class AlertActivity extends Activity {
          * Stop playing the sound.
          */
 		mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-	    userVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+	    userVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
 	    mMediaPlayer = new MediaPlayer();
 		
         if (type == Constants.ALARM){

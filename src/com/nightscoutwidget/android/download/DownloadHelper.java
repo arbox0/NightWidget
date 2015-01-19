@@ -227,16 +227,20 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			finalResult = doMongoDownload();
 			if (finalResult != null && isOnline())
 				updateValues(finalResult, views);
-			else{
+			/*else{
 				if (!isOnline()){
 					views.setTextColor(R.id.sgv_id, Color.GRAY);
 					views.setInt(R.id.sgv_id, "setPaintFlags",
 						Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
 				}
-			}
+			}*/
 			if (isOnline())
 				manager.updateAppWidget(thisWidget, views);
 		}
+		/*Intent intent = new Intent(context.getApplicationContext(),
+				AlertActivity.class);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		context.getApplicationContext().startActivity(intent);*/
 		return null;
 	}
 
@@ -493,7 +497,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			if (prefs.contains("lostTimeAlarmRaised"))
 				lostTimeAlarmRaised = prefs.getBoolean("lostTimeAlarmRaised",
 						false);
-			if (diff == current || diff >= maxTime) {
+			if (diff != current && diff >= maxTime) {
 				views.setTextColor(R.id.sgv_id, Color.GRAY);
 				views.setInt(R.id.sgv_id, "setPaintFlags",
 						Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);

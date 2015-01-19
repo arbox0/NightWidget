@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.preference.PreferenceManager;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import com.nightscoutwidget.android.R;
@@ -35,6 +36,12 @@ public class CGMWidget extends AppWidgetProvider {
 		    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
 			        PendingIntent pendingIntent = PendingIntent.getActivity(context, 7, intent, 0);
 			        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
+			        
+	    		}
+	    		if (prefs.getBoolean("showIcon", true)){
+	    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+	    		}else{
+	    			views.setViewVisibility(R.id.imageButton1, View.GONE);
 	    		}
 
 	            final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
@@ -66,7 +73,7 @@ public class CGMWidget extends AppWidgetProvider {
 	            	else if (type.equalsIgnoreCase("7"))
 	            		time = Constants.TIME_60_MIN_IN_MS;
 	            	else
-					time = Constants.TIME_5_MIN_IN_MS;
+	            		time = Constants.TIME_5_MIN_IN_MS;
 	            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
 	            }
 	        }
