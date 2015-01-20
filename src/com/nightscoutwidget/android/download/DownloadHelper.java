@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import javax.net.ssl.ManagerFactoryParameters;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -32,6 +34,7 @@ import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientOptions.Builder;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
+import com.mongodb.QueryBuilder;
 import com.mongodb.ServerAddress;
 import com.nightscoutwidget.android.R;
 import com.nightscoutwidget.android.alerts.AlertActivity;
@@ -93,9 +96,10 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			try {
 
 				// connect to db
-				MongoClientURI uri = new MongoClientURI(dbURI.trim());
+				//MongoClientURI uri = new MongoClientURI(dbURI.trim());
 				Builder b = MongoClientOptions.builder();
-                b.heartbeatConnectTimeout(60000);
+				b.alwaysUseMBeans(false);
+                b.connectTimeout(60000);
                 b.heartbeatSocketTimeout(60000);
                 b.maxWaitTime(60000);
                 boolean bAchieved = false;
@@ -130,6 +134,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
                 		}
                 	}
                 }
+                Log.d("NIGHTWIDGET","Uri TO CHANGE user "+user+" host "+source+" password "+password);
                 if (bAchieved){
 	                MongoCredential mc = MongoCredential.createMongoCRCredential(user, source , password.toCharArray());
 	                ServerAddress  sa = new ServerAddress(host, iPort);
@@ -140,7 +145,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	                	
 	                }
                 }
-
+				//client = new MongoClient(uri);
+                MongoClientURI uri = new MongoClientURI(dbURI.trim());
 				// get db
 				DB db = client.getDB(uri.getDatabase());
 
@@ -181,9 +187,12 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				}
 				if (collectionName != null) {
 					dexcomData = db.getCollection(collectionName.trim());
-					DBCursor dexcomCursor = dexcomData.find()
+					Log.i("MEDTRONIC","retrieving data");
+					DBCursor dexcomCursor = dexcomData.find(QueryBuilder.start("type").notEquals("mbg").get())
 							.sort(new BasicDBObject("date", -1)).limit(1);
+					Log.i("MEDTRONIC","retrieved data");
 					if (dexcomCursor.hasNext()) {
+						Log.i("MEDTRONIC","NEXT");
 						record = dexcomCursor.next();
 						if (record.containsField("date"))
 							result.put("date", record.get("date"));
