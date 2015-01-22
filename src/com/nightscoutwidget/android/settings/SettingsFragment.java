@@ -1,5 +1,9 @@
 package com.nightscoutwidget.android.settings;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -149,59 +153,88 @@ public class SettingsFragment extends PreferenceFragment implements
 					Object newValue) {
 				final String val = newValue.toString();
 				int index = metric_type.findIndexOfValue(val);
-				double divisor = 1;
+				float divisor = 1;
 				if (index == 1)
 					divisor = 18;
 				else 
-					divisor = 1.0/18.0;
-				double upperwarning = 0;
-				double lowerwarning = 0;
-				double upperalarm = 0;
-				double loweralarm = 0;
+					divisor = 1.0f/18.0f;
+				DecimalFormat df = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.US));
+				float upperwarning = 0;
+				float lowerwarning = 0;
+				float upperalarm = 0;
+				float loweralarm = 0;
 				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 				SharedPreferences.Editor editor = prefs.edit();
 				try {
-					upperwarning = Integer.parseInt(prefs.getString(
+					upperwarning = Float.parseFloat(prefs.getString(
 							"upper_warning_color", ""+((int)(140))));
-					editor.putString("upper_warning_color", ""+((int)Math.ceil(upperwarning/divisor)));
+					if (index == 1)
+						editor.putString("upper_warning_color", ""+df.format(upperwarning/divisor));
+					else 
+						editor.putString("upper_warning_color", ""+((int)Math.ceil(upperwarning/divisor)));
+					
 					Preference p = findPreference("upper_warning_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+((int)(Math.ceil(upperwarning/divisor))));
+					if (index == 1)
+						editTextPref.setText( ""+df.format(upperwarning/divisor));
+					else
+						editTextPref.setText( ""+((int)(Math.ceil(upperwarning/divisor))));
+					
 					p.setSummary(editTextPref.getText());
 				} catch (Exception e) {
 
 				}
 				try {
-					lowerwarning = Integer.parseInt(prefs.getString(
+					lowerwarning = Float.parseFloat(prefs.getString(
 							"lower_warning_color", ""+((int)(80))));
-					editor.putString("lower_warning_color", ""+((int)Math.floor(lowerwarning/divisor)));
+					if (index == 1)
+						editor.putString("lower_warning_color", ""+df.format(lowerwarning/divisor));
+					else
+						editor.putString("lower_warning_color", ""+((int)Math.floor(lowerwarning/divisor)));
 					Preference p = findPreference("lower_warning_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+((int)Math.floor(lowerwarning/divisor)));
+					if (index == 1)
+						editTextPref.setText( ""+df.format(lowerwarning/divisor));
+					else
+						editTextPref.setText( ""+((int)Math.floor(lowerwarning/divisor)));
+					
 					p.setSummary(editTextPref.getText());
 
 				} catch (Exception e) {
 
 				}
 				try {
-					upperalarm = Integer.parseInt(prefs.getString(
+					upperalarm = Float.parseFloat(prefs.getString(
 							"upper_alarm_color", ""+((int)(170))));
+					if (index == 1)
+						editor.putString("upper_alarm_color", ""+df.format(upperalarm/divisor));
+					else
+						editor.putString("upper_alarm_color", ""+((int)Math.ceil(upperalarm/divisor)));
 					
-					editor.putString("upper_alarm_color", ""+((int)Math.ceil(upperalarm/divisor)));
 					Preference p = findPreference("upper_alarm_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+((int)Math.ceil(upperalarm/divisor)));
+					if (index == 1)
+						editTextPref.setText( ""+df.format(upperalarm/divisor));
+					else
+						editTextPref.setText( ""+((int)Math.ceil(upperalarm/divisor)));
 					p.setSummary(editTextPref.getText());
 				} catch (Exception e) {
 
 				}
 				try {
-					loweralarm = Integer.parseInt(prefs.getString(
+					loweralarm = Float.parseFloat(prefs.getString(
 							"lower_alarm_color", ""+((int)(70))));
-					editor.putString("lower_alarm_color", ""+((int)Math.floor(loweralarm/divisor)));
+					if (index == 1)
+						editor.putString("lower_alarm_color", ""+df.format(loweralarm/divisor));
+					else
+						editor.putString("lower_alarm_color", ""+((int)Math.floor(loweralarm/divisor)));
 					Preference p = findPreference("lower_alarm_color");
 					EditTextPreference editTextPref = (EditTextPreference) p;
-					editTextPref.setText( ""+((int)Math.floor(loweralarm/divisor)));
+					if (index == 1)
+						editTextPref.setText( ""+df.format(loweralarm/divisor));
+					else
+						editTextPref.setText( ""+((int)Math.floor(loweralarm/divisor)));
+					
 					p.setSummary(editTextPref.getText());
 				} catch (Exception e) {
 

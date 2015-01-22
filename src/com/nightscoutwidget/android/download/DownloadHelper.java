@@ -1,11 +1,10 @@
 package com.nightscoutwidget.android.download;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import javax.net.ssl.ManagerFactoryParameters;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,6 +19,8 @@ import android.graphics.Paint;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -41,9 +42,11 @@ import com.nightscoutwidget.android.alerts.AlertActivity;
 import com.nightscoutwidget.android.medtronic.Constants;
 
 /**
- * This class has the responsability of download the last entries in the MongoDB and process them to match the Widget needs
+ * This class has the responsability of download the last entries in the MongoDB
+ * and process them to match the Widget needs
+ * 
  * @author lmmarguenda
- *
+ * 
  */
 public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
@@ -54,11 +57,16 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	private SharedPreferences prefs = null;
 	public boolean isCalculating = false;
 	public JSONObject finalResult = null;
+	public ToggleRunnableAction mToggleRunnableAction = new ToggleRunnableAction();
+	public Handler mHandlerToggleInfo = new Handler();
 
 	/**
 	 * Constructor.
-	 * @param context, application or base context of the activity
-	 * @param prefs, Shared preferences.
+	 * 
+	 * @param context
+	 *            , application or base context of the activity
+	 * @param prefs
+	 *            , Shared preferences.
 	 */
 	public DownloadHelper(Context context, SharedPreferences prefs) {
 		this(context, Constants.DEXCOMG4, prefs);
@@ -66,15 +74,20 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 	/**
 	 * Constructor.
-	 * @param context, application or base context of the activity
-	 * @param cgmSelected, which type of CGM is selected Medtronic or DexCom
-	 * @param prefs, Shared preferences.
+	 * 
+	 * @param context
+	 *            , application or base context of the activity
+	 * @param cgmSelected
+	 *            , which type of CGM is selected Medtronic or DexCom
+	 * @param prefs
+	 *            , Shared preferences.
 	 */
 	public DownloadHelper(Context context, int cgmSelected,
 			SharedPreferences prefs) {
 		this.context = context;
 		this.cgmSelected = cgmSelected;
 		this.prefs = prefs;
+
 	}
 
 	/**
@@ -82,7 +95,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 * @return
 	 */
 	private JSONObject doMongoDownload() {
-
+		Log.i("MED", "doMongoDownload");
 		String dbURI = prefs.getString("MongoDB URI", null);
 		String collectionName = prefs.getString("Collection Name", "entries");
 		String dsCollectionName = prefs.getString(
@@ -90,63 +103,77 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		// String gdCollectionName = prefs.getString("gcdCollectionName", null);
 		String devicesCollectionName = "devices";
 		JSONObject result = null;
+		JSONObject resultMbg = null;
+		JSONObject finalResult = null;
 		if (dbURI != null) {
 			result = new JSONObject();
+			resultMbg = new JSONObject();
+			finalResult = new JSONObject();
 			MongoClient client = null;
 			try {
 
 				// connect to db
-				//MongoClientURI uri = new MongoClientURI(dbURI.trim());
+				// MongoClientURI uri = new MongoClientURI(dbURI.trim());
 				Builder b = MongoClientOptions.builder();
 				b.alwaysUseMBeans(false);
-                b.connectTimeout(60000);
-                b.heartbeatSocketTimeout(60000);
-                b.maxWaitTime(60000);
-                boolean bAchieved = false;
-                String user = "";
-                String password = "";
-                String source = "";
-                String host = "";
-                String port = "";
-                int iPort = -1;
-                if  (dbURI.length() > 0){
-                	String[] splitted = dbURI.split(":");
-                	if (splitted.length >= 4 ){
-                		user = splitted[1].substring(2);
-                		if (splitted[2].indexOf("@") < 0)
-                			bAchieved = false;
-                		else{
-                			password = splitted[2].substring(0,splitted[2].indexOf("@"));
-                			host = splitted[2].substring(splitted[2].indexOf("@")+1, splitted[2].length());
-                			if (splitted[3].indexOf("/") < 0)
-                				bAchieved = false;
-                			else{
-                				port = splitted[3].substring(0, splitted[3].indexOf("/"));
-                				source = splitted[3].substring(splitted[3].indexOf("/")+1, splitted[3].length());
-                				try{
-                				iPort = Integer.parseInt(port);
-                				}catch(Exception ne){
-                					iPort = -1;
-                				}
-                				if (iPort > -1)
-                					bAchieved = true;
-                			}
-                		}
-                	}
-                }
-                Log.d("NIGHTWIDGET","Uri TO CHANGE user "+user+" host "+source+" password "+password);
-                if (bAchieved){
-	                MongoCredential mc = MongoCredential.createMongoCRCredential(user, source , password.toCharArray());
-	                ServerAddress  sa = new ServerAddress(host, iPort);
-	                List<MongoCredential> lcredential = new ArrayList<MongoCredential>();
-	                lcredential.add(mc);
-	                if (sa != null && sa.getHost() != null && sa.getHost().indexOf("localhost") < 0){
-	                	client = new MongoClient(sa, lcredential, b.build());
-	                	
-	                }
-                }
-				//client = new MongoClient(uri);
-                MongoClientURI uri = new MongoClientURI(dbURI.trim());
+				b.connectTimeout(60000);
+				b.heartbeatSocketTimeout(60000);
+				b.maxWaitTime(60000);
+				boolean bAchieved = false;
+				String user = "";
+				String password = "";
+				String source = "";
+				String host = "";
+				String port = "";
+				int iPort = -1;
+				if (dbURI.length() > 0) {
+					String[] splitted = dbURI.split(":");
+					if (splitted.length >= 4) {
+						user = splitted[1].substring(2);
+						if (splitted[2].indexOf("@") < 0)
+							bAchieved = false;
+						else {
+							password = splitted[2].substring(0,
+									splitted[2].indexOf("@"));
+							host = splitted[2].substring(
+									splitted[2].indexOf("@") + 1,
+									splitted[2].length());
+							if (splitted[3].indexOf("/") < 0)
+								bAchieved = false;
+							else {
+								port = splitted[3].substring(0,
+										splitted[3].indexOf("/"));
+								source = splitted[3].substring(
+										splitted[3].indexOf("/") + 1,
+										splitted[3].length());
+								try {
+									iPort = Integer.parseInt(port);
+								} catch (Exception ne) {
+									iPort = -1;
+								}
+								if (iPort > -1)
+									bAchieved = true;
+							}
+						}
+					}
+				}
+				Log.d("NIGHTWIDGET", "Uri TO CHANGE user " + user + " host "
+						+ source + " password " + password);
+				if (bAchieved) {
+					MongoCredential mc = MongoCredential
+							.createMongoCRCredential(user, source,
+									password.toCharArray());
+					ServerAddress sa = new ServerAddress(host, iPort);
+					List<MongoCredential> lcredential = new ArrayList<MongoCredential>();
+					lcredential.add(mc);
+					if (sa != null && sa.getHost() != null
+							&& sa.getHost().indexOf("localhost") < 0) {
+						client = new MongoClient(sa, lcredential, b.build());
+
+					}
+				}
+				// client = new MongoClient(uri);
+				MongoClientURI uri = new MongoClientURI(dbURI.trim());
 				// get db
 				DB db = client.getDB(uri.getDatabase());
 
@@ -157,6 +184,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						.getCollection(devicesCollectionName);
 				DBObject medtronicDevice = null;
 				DBObject record = null;
+				DBObject recordMbg = null;
 				if (deviceData != null
 						&& cgmSelected == Constants.MEDTRONIC_CGM) {
 					DBCursor deviceCursor = deviceData
@@ -187,12 +215,17 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				}
 				if (collectionName != null) {
 					dexcomData = db.getCollection(collectionName.trim());
-					Log.i("MEDTRONIC","retrieving data");
-					DBCursor dexcomCursor = dexcomData.find(QueryBuilder.start("type").notEquals("mbg").get())
+					Log.i("MEDTRONIC", "retrieving data");
+					DBCursor dexcomCursor = dexcomData
+							.find(QueryBuilder.start("type").notEquals("mbg")
+									.get()).sort(new BasicDBObject("date", -1))
+							.limit(1);
+					DBCursor mbgCursor = dexcomData
+							.find(QueryBuilder.start("type").is("mbg").get())
 							.sort(new BasicDBObject("date", -1)).limit(1);
-					Log.i("MEDTRONIC","retrieved data");
+					Log.i("MEDTRONIC", "retrieved data");
 					if (dexcomCursor.hasNext()) {
-						Log.i("MEDTRONIC","NEXT");
+						Log.i("MEDTRONIC", "NEXT");
 						record = dexcomCursor.next();
 						if (record.containsField("date"))
 							result.put("date", record.get("date"));
@@ -213,6 +246,17 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 								result.put("isCalibrating",
 										record.get("isCalibrating"));
 						}
+					}
+					if (mbgCursor.hasNext()) {
+						Log.i("MEDTRONIC", "NEXT");
+						recordMbg = mbgCursor.next();
+						if (recordMbg.containsField("date"))
+							resultMbg.put("date", recordMbg.get("date"));
+						if (recordMbg.containsField("dateString"))
+							resultMbg.put("dateString",
+									recordMbg.get("dateString"));
+						if (recordMbg.containsField("mbg"))
+							resultMbg.put("mbg", recordMbg.get("mbg"));
 					}
 				}
 				/*
@@ -261,11 +305,21 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				Log.e(TAG, sb1.toString());
 			}
 		}
-		return result;
+		if (finalResult == null)
+			return null;
+		try {
+			finalResult.put("sgvResult", result);
+			finalResult.put("mbgResult", resultMbg);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return finalResult;
 	}
 
 	@Override
 	protected Void doInBackground(Object... arg0) {
+		Log.i("MED", "DO IN BACKGROUND");
 		if (arg0.length == 3) {
 			ComponentName thisWidget = null;
 			AppWidgetManager manager = null;
@@ -282,28 +336,38 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				views = (RemoteViews) arg0[2];
 			} else
 				return null;
+			this.mToggleRunnableAction.ctx = context;
+			this.mToggleRunnableAction.thisWidget = thisWidget;
+			this.mToggleRunnableAction.manager = manager;
+			this.mToggleRunnableAction.views = views;
 			finalResult = doMongoDownload();
-			if (finalResult != null && isOnline())
+			if (finalResult != null && isOnline()){
+				Log.i("MED", "Final Result not null");
 				updateValues(finalResult, views);
-			/*else{
-				if (!isOnline()){
-					views.setTextColor(R.id.sgv_id, Color.GRAY);
-					views.setInt(R.id.sgv_id, "setPaintFlags",
-						Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-				}
-			}*/
+			}else{
+				Log.i("MED", "Final Result is Null");
+			}
+			/*
+			 * else{ if (!isOnline()){ views.setTextColor(R.id.sgv_id,
+			 * Color.GRAY); views.setInt(R.id.sgv_id, "setPaintFlags",
+			 * Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG); } }
+			 */
 			if (isOnline())
 				manager.updateAppWidget(thisWidget, views);
+			mHandlerToggleInfo.removeCallbacks(mToggleRunnableAction);
+			mHandlerToggleInfo.postDelayed(mToggleRunnableAction, 20000);
 		}
-		/*Intent intent = new Intent(context.getApplicationContext(),
-				AlertActivity.class);
-		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		context.getApplicationContext().startActivity(intent);*/
+		/*
+		 * Intent intent = new Intent(context.getApplicationContext(),
+		 * AlertActivity.class); intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		 * context.getApplicationContext().startActivity(intent);
+		 */
 		return null;
 	}
 
 	/**
 	 * Check if the phone has internet access.
+	 * 
 	 * @return Boolean, true if the mobile phone has internet access.
 	 */
 	private boolean isOnline() {
@@ -316,11 +380,16 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	/**
 	 * This method, process the downloaded entry and updates the widget to show
 	 * the new data.
-	 * @param result, JsonObject, downloaded entry.
-	 * @param views, Access to the Widget UI.
+	 * 
+	 * @param result
+	 *            , JsonObject, downloaded entry.
+	 * @param views
+	 *            , Access to the Widget UI.
 	 */
-	public void updateValues(JSONObject result, RemoteViews views) {
+	public void updateValues(JSONObject resultTotal, RemoteViews views) {
+		Log.i("MED", "updateValues");
 		String sgv = "";
+		String mbg = "";
 		String direction = "";
 		int calibrationStatus = -1;
 		boolean isCalibrating = false;
@@ -328,11 +397,74 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		String batteryStatus = "Normal";
 		String itemSelected = prefs.getString("reservoir_ins_units", "2");
 		int max_ins_units = 300;
+
+		JSONObject result = null;
+		JSONObject mbgResult = null;
+		try {
+			mbgResult = resultTotal.getJSONObject("mbgResult");
+		} catch (JSONException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			mbgResult = null;
+		}
+		if (mbgResult != null) {
+			try {
+				if (mbgResult.has("mbg") && mbgResult.getString("mbg") != null) {
+					mbg = mbgResult.getString("mbg");
+					if (mbg != null && !"".equals(mbg) && !"---".equals(mbg)) {
+						mbg = processMBGValue(mbg, views);
+						Log.i("EOOOMBG ",""+ mbg);
+					}
+				}
+			} catch (Exception e) {
+				Log.e("error", "error",e);
+			}
+
+			if (mbg == null)
+				mbg = "---";
+			views.setTextViewText(R.id.mbg_value, " " + mbg);
+			long date = 0;
+			if (mbgResult.has("date")) {
+				try {
+					date = mbgResult.getLong("date");
+				} catch (Exception e) {
+					date = 0;
+				}
+			} else
+				date = 0;
+
+			long current = System.currentTimeMillis();
+			long diff = current - date;
+
+			if (diff == current || (diff / 60000 < 1)) {
+				views.setViewVisibility(R.id.mbg_time_id, View.GONE);
+			} else {
+
+				views.setViewVisibility(R.id.mbg_time_id, View.VISIBLE);
+				if (diff / 60000 <= 60)
+					views.setTextViewText(R.id.mbg_time_id, " "
+							+ ((int) (diff / 60000)) + " min. ago");
+				else if (diff / Constants.TIME_60_MIN_IN_MS <= 24)
+					views.setTextViewText(R.id.mbg_time_id, " > 1 h. ago");
+				else
+					views.setTextViewText(R.id.mbg_time_id, " > 1 d. ago");
+			}
+		}
+		try {
+			result = resultTotal.getJSONObject("sgvResult");
+		} catch (JSONException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			return;
+		}
+		if (result == null) {
+			return;
+		}
 		boolean isWarmingUp = false;
 		try {
 			isWarmingUp = result.getBoolean("isWarmingUp");
 		} catch (Exception e) {
-
+			Log.e("error", "error",e);
 		}
 		if ("1".equalsIgnoreCase(itemSelected))
 			max_ins_units = 176;
@@ -356,8 +488,10 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					views.setImageViewResource(R.id.resIcon, R.drawable.res_red);
 				views.setTextViewText(
 						R.id.insulin_data_id,
-						"" + new DecimalFormat("###").format(Math.floor(result
-										.getDouble("insulinLeft")))+" U");
+						""
+								+ new DecimalFormat("###").format(Math
+										.floor(result.getDouble("insulinLeft")))
+								+ " U");
 			} else {
 				views.setViewVisibility(R.id.insulin_data_id, View.GONE);
 				views.setViewVisibility(R.id.resIcon, View.GONE);
@@ -412,7 +546,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					views.setViewVisibility(R.id.device_battery_text_id,
 							View.GONE);
 				}
-				
+
 			} else {
 				views.setViewVisibility(R.id.devBattery, View.GONE);
 				views.setViewVisibility(R.id.device_battery_text_id, View.GONE);
@@ -437,28 +571,29 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			if (result.has("sgv") && result.getString("sgv") != null) {
 				sgv = result.getString("sgv");
 				if (sgv != null && !"".equals(sgv) && !"---".equals(sgv)
-						&& !isWarmingUp){
+						&& !isWarmingUp) {
 					if (isCalibrating)
 						calib = "*";
-					else{
-						if (cgmSelected == Constants.MEDTRONIC_CGM){
-							if (sgv.indexOf("NC") < 0 || sgv.indexOf("DB")<0)
-								calib = Constants.getWidgetCalAppend(calibrationStatus);
-						}else
+					else {
+						if (cgmSelected == Constants.MEDTRONIC_CGM) {
+							if (sgv.indexOf("NC") < 0 || sgv.indexOf("DB") < 0)
+								calib = Constants
+										.getWidgetCalAppend(calibrationStatus);
+						} else
 							calib = "";
-						
+
 					}
-					if (calib.indexOf("NC") >= 0 || calib.indexOf("DB")>=0)
+					if (calib.indexOf("NC") >= 0 || calib.indexOf("DB") >= 0)
 						sgv = calib;
 					else
 						sgv = processSGVValue(sgv, views);
-				}else if ("".equals(sgv) || "---".equals(sgv)){
+				} else if ("".equals(sgv) || "---".equals(sgv)) {
 					if (cgmSelected == Constants.MEDTRONIC_CGM)
 						calib = Constants.getWidgetCalAppend(calibrationStatus);
 					else
 						calib = "";
-					if (calib.indexOf("NC") >= 0 || calib.indexOf("DB")>=0)
-						sgv =calib;
+					if (calib.indexOf("NC") >= 0 || calib.indexOf("DB") >= 0)
+						sgv = calib;
 				}
 			}
 		} catch (Exception e) {
@@ -472,11 +607,13 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			if (result.has("uploaderBattery")) {
 				int phoneBatt = result.getInt("uploaderBattery");
 				if (phoneBatt >= 0) {
+
 					views.setViewVisibility(R.id.phoneBattery, View.VISIBLE);
 					views.setViewVisibility(R.id.phone_battery_label_id,
 							View.VISIBLE);
 					views.setViewVisibility(R.id.phone_battery_text_id,
 							View.VISIBLE);
+
 					if (phoneBatt > 50) {
 						views.setImageViewResource(R.id.phoneBattery,
 								R.drawable.battery_full_icon);
@@ -509,7 +646,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			calib = "";
 			sgv = "W_Up";
 		}
-		if (calib.indexOf("NC") >= 0 || calib.indexOf("DB")>=0)
+		if (calib.indexOf("NC") >= 0 || calib.indexOf("DB") >= 0)
 			views.setTextViewText(R.id.sgv_id, calib);
 		else
 			views.setTextViewText(R.id.sgv_id, sgv + calib);
@@ -520,7 +657,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			} catch (Exception e) {
 				date = 0;
 			}
-		}else
+		} else
 			date = 0;
 
 		long current = System.currentTimeMillis();
@@ -536,20 +673,15 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		} else if ("5".equalsIgnoreCase(type)) {
 			maxTime = Constants.TIME_30_MIN_IN_MS;
 		} else if ("6".equalsIgnoreCase(type)) {
-			maxTime = Constants.TIME_30_MIN_IN_MS
-					+ Constants.TIME_5_MIN_IN_MS;
+			maxTime = Constants.TIME_30_MIN_IN_MS + Constants.TIME_5_MIN_IN_MS;
 		} else if ("7".equalsIgnoreCase(type)) {
-			maxTime = Constants.TIME_30_MIN_IN_MS
-					+ Constants.TIME_10_MIN_IN_MS;
+			maxTime = Constants.TIME_30_MIN_IN_MS + Constants.TIME_10_MIN_IN_MS;
 		} else if ("8".equalsIgnoreCase(type)) {
-			maxTime = Constants.TIME_30_MIN_IN_MS
-					+ Constants.TIME_15_MIN_IN_MS;
+			maxTime = Constants.TIME_30_MIN_IN_MS + Constants.TIME_15_MIN_IN_MS;
 		} else if ("9".equalsIgnoreCase(type)) {
-			maxTime = Constants.TIME_30_MIN_IN_MS
-					+ Constants.TIME_20_MIN_IN_MS;
+			maxTime = Constants.TIME_30_MIN_IN_MS + Constants.TIME_20_MIN_IN_MS;
 		} else if ("10".equalsIgnoreCase(type)) {
-			maxTime = Constants.TIME_30_MIN_IN_MS
-					+ Constants.TIME_25_MIN_IN_MS;
+			maxTime = Constants.TIME_30_MIN_IN_MS + Constants.TIME_25_MIN_IN_MS;
 		} else if ("11".equalsIgnoreCase(type)) {
 			maxTime = Constants.TIME_60_MIN_IN_MS;
 		} else
@@ -557,7 +689,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		boolean lostTimeAlarmRaised = false;
 		boolean alarms_active = prefs.getBoolean("alarms_active", true);
 		boolean raiseLostAlarm = prefs.getBoolean("alarm_lost", true);
-		if (alarms_active){
+		if (alarms_active) {
 			if (prefs.contains("lostTimeAlarmRaised"))
 				lostTimeAlarmRaised = prefs.getBoolean("lostTimeAlarmRaised",
 						false);
@@ -586,24 +718,28 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				}
 			} else {
 				views.setInt(R.id.sgv_id, "setPaintFlags",
-						Paint.ANTI_ALIAS_FLAG ); //TODO: I have to test this improvement--> | (~ Paint.STRIKE_THRU_TEXT_FLAG));
+						Paint.ANTI_ALIAS_FLAG); // TODO: I have to test this
+												// improvement--> | (~
+												// Paint.STRIKE_THRU_TEXT_FLAG));
 				if (diff < Constants.TIME_10_MIN_IN_MS) {
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.remove("lostTimeAlarmRaised");
 					editor.commit();
 				}
 			}
-		}else{
+		} else {
 			if (diff == current || diff >= maxTime) {
 				views.setTextColor(R.id.sgv_id, Color.GRAY);
 				views.setInt(R.id.sgv_id, "setPaintFlags",
 						Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
 			}
 		}
-		if (diff == current || (diff / 60000 < 1)){
+		if (diff == current || (diff / 60000 < 1)) {
 			views.setViewVisibility(R.id.minute_id, View.GONE);
-		}else{
+		} else {
+
 			views.setViewVisibility(R.id.minute_id, View.VISIBLE);
+
 			if (diff > maxTime)
 				views.setTextColor(R.id.minute_id, Color.RED);
 			else if (diff > (maxTime - Constants.TIME_5_MIN_IN_MS))
@@ -611,44 +747,56 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			else
 				views.setTextColor(R.id.minute_id, Color.WHITE);
 			if (diff / 60000 <= 60)
-				views.setTextViewText(R.id.minute_id, " "+((int)(diff / 60000))+" min.");
+				views.setTextViewText(R.id.minute_id, " "
+						+ ((int) (diff / 60000)) + " min.");
 			else if (diff / Constants.TIME_60_MIN_IN_MS <= 24)
 				views.setTextViewText(R.id.minute_id, " > 1 h.");
-			else 
+			else
 				views.setTextViewText(R.id.minute_id, " > 1 d.");
 		}
 		views.setTextViewText(R.id.arrow_id, getArrow(direction));
 	}
 
 	/**
-	 * This method helps to process the last sgv value received. It also raise alarms if needed.
-	 * @param sgv, last sgv value
-	 * @param views, access to the Widget UI.
+	 * This method helps to process the last sgv value received. It also raise
+	 * alarms if needed.
+	 * 
+	 * @param sgv
+	 *            , last sgv value
+	 * @param views
+	 *            , access to the Widget UI.
 	 */
 	private String processSGVValue(String sgv, RemoteViews views) {
 		Log.i("processSGVValue", "processSGVValue " + sgv);
-		Integer sgvInt = -1;
+		Float sgvInt = -1f;
 		boolean alarms_active = prefs.getBoolean("alarms_active", true);
-		int divisor = 1;
-		if (prefs.getString("metric_preference","1").equals("2"))
+		float divisor = 1;
+		DecimalFormat df = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.US));
+		if (prefs.getString("metric_preference", "1").equals("2"))
 			divisor = 18;
 		try {
-			if (alarms_active){
-				if (!Constants.checkSgvErrorValue(sgv)){
-					sgvInt = Integer.parseInt(sgv);
-					if (prefs.getString("metric_preference","1").equals("2"))
-						sgvInt = (int)sgvInt/divisor;
-				}else{
-					boolean alarm_error = prefs.getBoolean("alarm_error", false);
-					boolean errorsgv_raised = prefs.getBoolean("error_sgvraised", false);
-					String alarmerror_ringtone = prefs.getString("alarmerror_ringtone", "");
-					if (alarm_error && !errorsgv_raised && alarmerror_ringtone != null && !alarmerror_ringtone.equals("")){
+			if (alarms_active) {
+				if (!Constants.checkSgvErrorValue(sgv)) {
+					sgvInt = (float) Integer.parseInt(sgv);
+					if (prefs.getString("metric_preference", "1").equals("2"))
+						sgvInt = sgvInt / divisor;
+				} else {
+					boolean alarm_error = prefs
+							.getBoolean("alarm_error", false);
+					boolean errorsgv_raised = prefs.getBoolean(
+							"error_sgvraised", false);
+					String alarmerror_ringtone = prefs.getString(
+							"alarmerror_ringtone", "");
+					if (alarm_error && !errorsgv_raised
+							&& alarmerror_ringtone != null
+							&& !alarmerror_ringtone.equals("")) {
 						SharedPreferences.Editor editor = prefs.edit();
 						editor.putBoolean("error_sgvraised", true);
 						editor.putInt("alarmType", Constants.ALARM_SGV_ERROR);
 						editor.putString("sgv", sgv);
 						editor.commit();
-						Intent intent = new Intent(context.getApplicationContext(),
+						Intent intent = new Intent(
+								context.getApplicationContext(),
 								AlertActivity.class);
 						intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 						context.getApplicationContext().startActivity(intent);
@@ -659,8 +807,9 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					}
 				}
 			}
-				
+
 		} catch (Exception e) {
+			Log.e("error", "error",e);
 		}
 		Log.i("processSGVValue", "processSGVValueINT " + sgvInt);
 		if (sgvInt <= 0) {
@@ -674,36 +823,58 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			boolean warningRaised = prefs.getBoolean("warningRaised", false);
 			String alarm_ringtone = prefs.getString("alarm_ringtone", "");
 			String warning_ringtone = prefs.getString("warning_ringtone", "");
-			int upperwarning = 0;
-			int lowerwarning = 0;
-			int upperalarm = 0;
-			int loweralarm = 0;
+			float upperwarning = 0;
+			float lowerwarning = 0;
+			float upperalarm = 0;
+			float loweralarm = 0;
 			int color = Color.WHITE;
-			
-			try {
-				upperwarning = Integer.parseInt(prefs.getString(
-						"upper_warning_color", ""+((int)(140/divisor))));
-			} catch (Exception e) {
 
+			try {
+				if (prefs.getString("metric_preference", "1").equals("1"))
+					upperwarning = Integer.parseInt(prefs
+							.getString("upper_warning_color", ""
+									+ ((int) (140 / divisor))));
+				else
+					upperwarning = Float.parseFloat(prefs
+							.getString("upper_warning_color", ""
+									+ ((float) (140 / divisor))).replace(",", "."));
+			} catch (Exception e) {
+				Log.e("error", "error",e);
 			}
 			try {
-				lowerwarning = Integer.parseInt(prefs.getString(
-						"lower_warning_color", ""+((int)(80/divisor))));
-			} catch (Exception e) {
+				if (prefs.getString("metric_preference", "1").equals("1"))
+					lowerwarning = Integer
+							.parseInt(prefs.getString("lower_warning_color", ""
+									+ ((int) (80 / divisor))));
+				else
+					lowerwarning = Float
+							.parseFloat(prefs.getString("lower_warning_color",
+									"" + ((float) (80 / divisor))).replace(",", "."));
 
+			} catch (Exception e) {
+				Log.e("error", "error",e);
 			}
 			try {
-				upperalarm = Integer.parseInt(prefs.getString(
-						"upper_alarm_color", ""+((int)(170/divisor))));
+				if (prefs.getString("metric_preference", "1").equals("1"))
+					upperalarm = Integer.parseInt(prefs.getString(
+							"upper_alarm_color", "" + ((int) (170 / divisor))));
+				else
+					upperalarm = Float.parseFloat(prefs.getString(
+							"upper_alarm_color", "" + ((float) (170 / divisor))).replace(",", "."));
 
 			} catch (Exception e) {
-
+				Log.e("error", "error",e);
 			}
 			try {
-				loweralarm = Integer.parseInt(prefs.getString(
-						"lower_alarm_color", ""+((int)(70/divisor))));
-			} catch (Exception e) {
+				if (prefs.getString("metric_preference", "1").equals("1"))
+					loweralarm = Integer.parseInt(prefs.getString(
+							"lower_alarm_color", "" + ((int) (70 / divisor))));
+				else
+					loweralarm = Float.parseFloat(prefs.getString(
+							"lower_alarm_color", "" + ((float) (70 / divisor))).replace(",", "."));
 
+			} catch (Exception e) {
+				Log.e("error", "error",e);
 			}
 
 			Log.i("processSGVValue", "UW " + upperwarning + " LW "
@@ -735,14 +906,14 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			Log.i("processSGVValue", "Wraised " + warningRaised
 					+ " Alarmraside " + alarmRaised);
 			views.setTextColor(R.id.sgv_id, color);
-			if (alarms_active){
+			if (alarms_active) {
 				if (!alarmRaised && color == Color.RED && sound_alarm
 						&& alarm_ringtone != null && !alarm_ringtone.equals("")) {
-	
+
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.putBoolean("alarmRaised", true);
 					editor.putInt("alarmType", Constants.ALARM);
-					editor.putString("sgv", ""+sgvInt);
+					editor.putString("sgv", "" + sgvInt);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
@@ -759,13 +930,13 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.putInt("alarmType", Constants.WARNING);
 					editor.putBoolean("warningRaised", true);
-					editor.putString("sgv", ""+sgvInt);
+					editor.putString("sgv", "" + sgvInt);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
 					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					context.getApplicationContext().startActivity(intent);
-	
+
 				} else if (!sound_warning) {
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.putBoolean("warningRaised", true);
@@ -781,11 +952,60 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			}
 
 		}
-		return ""+ sgvInt;
+		if (prefs.getString("metric_preference", "1").equals("2"))
+			return df.format(sgvInt);
+		else
+			return "" + (sgvInt.intValue());
 	}
+
+	/**
+	 * This method helps to process the last sgv value received. It also raise
+	 * alarms if needed.
+	 * 
+	 * @param sgv
+	 *            , last sgv value
+	 * @param views
+	 *            , access to the Widget UI.
+	 */
+	private String processMBGValue(String mbg, RemoteViews views) {
+		Log.i("processMBGValue", "processMBGValue " + mbg +" METRICS "+prefs.getString("metric_preference", "1"));
+		Float mbgInt = -1f;
+		float divisor = 1;
+		DecimalFormat df = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.US));
+		if (prefs.getString("metric_preference", "1").equals("2")){
+			divisor = 18;
+		}
+		try {
+
+			mbgInt =  Float.parseFloat("100");
+			if (prefs.getString("metric_preference", "1").equals("2"))
+				mbgInt = (float) mbgInt / divisor;
+
+		} catch (Exception e) {
+			Log.e("error", "error",e);
+		}
+		Log.i("processMBGValue", "processMBGValueINT " + mbgInt);
+		if (mbgInt <= 0) {
+			views.setTextColor(R.id.mbg_label, Color.WHITE);
+			views.setTextColor(R.id.mbg_time_id, Color.WHITE);
+			views.setTextColor(R.id.mbg_value, Color.WHITE);
+			return mbg;
+		} else {
+			views.setTextColor(R.id.mbg_label, Color.WHITE);
+			views.setTextColor(R.id.mbg_time_id, Color.WHITE);
+			views.setTextColor(R.id.mbg_value, Color.WHITE);
+		}
+		if (prefs.getString("metric_preference", "1").equals("2"))
+			return df.format(mbgInt);
+		else
+			return "" + (mbgInt.intValue());
+	}
+
 	/**
 	 * Changes the arrow label, to the arrow icon.
-	 * @param direction, String, label of the arrow direction
+	 * 
+	 * @param direction
+	 *            , String, label of the arrow direction
 	 * @return, String, Arrow to draw.
 	 */
 	public String getArrow(String direction) {
@@ -818,7 +1038,63 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 		return "\u2194";
 	}
-	
+
+	class ToggleRunnableAction implements Runnable {
+		ComponentName thisWidget = null;
+		RemoteViews views = null;
+		AppWidgetManager manager = null;
+		Context ctx = null;
+
+		public ToggleRunnableAction() {
+		}
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			SharedPreferences settings = PreferenceManager
+					.getDefaultSharedPreferences(ctx);
+			Log.i("widget", "TOGGLE");
+			long current = System.currentTimeMillis();
+			long diff = 0;
+
+			SharedPreferences.Editor editor = settings.edit();
+			if (settings.getLong("timeMBG", 0) != 0) {
+				diff = current - settings.getLong("timeMBG", 0);
+			} else {
+				editor.putLong("timeMBG", current);
+			}
+			if (settings.getBoolean("showSGV", true) && diff != current
+					&& diff >= 20000) {
+				editor.putBoolean("showSGV",
+						!settings.getBoolean("showSGV", true));
+				editor.putLong("timeMBG", current);
+				Log.i("widget", "TOGGLE1");
+				views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
+
+				views.setViewVisibility(R.id.linearLayout3, View.GONE);
+
+				if (isOnline())
+					manager.updateAppWidget(thisWidget, views);
+			} else if (!settings.getBoolean("showSGV", true) && diff != current
+					&& diff >= 20000) {
+				editor.putBoolean("showSGV",
+						!settings.getBoolean("showSGV", true));
+				editor.putLong("timeMBG", current);
+				Log.i("widget", "TOGGLE2");
+				views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);
+
+				views.setViewVisibility(R.id.linearLayout2, View.GONE);
+				if (isOnline())
+					manager.updateAppWidget(thisWidget, views);
+			}
+
+			editor.commit();
+			mHandlerToggleInfo.removeCallbacks(this);
+			mHandlerToggleInfo.postDelayed(this, 20000);
+		}
+
+	}
+
 	public void setPrefs(SharedPreferences prefs) {
 		this.prefs = prefs;
 	}

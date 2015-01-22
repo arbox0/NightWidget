@@ -210,8 +210,7 @@
             android:title="WEB URI"
             android:key="web_uri"
             android:dialogTitle="Enter WEB URI"
-            android:dialogMessage="Please, write the web address where your nightscout page is published"
-            android:defaultValue="http://{yourwebname}.azurewebsites.net">
+            android:dialogMessage="Please, write the web address where your nightscout page is published">
     </EditTextPreference>
     </PreferenceCategory>
      <PreferenceCategory android:title="Disclaimer">

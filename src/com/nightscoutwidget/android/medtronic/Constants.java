@@ -15,6 +15,9 @@ public class Constants {
 	public static final int YELLOW = Color.rgb(251, 173, 0);// Color.rgb(252,
 															// 255, 20);
 
+	public static final int ACTION_SHOW_PHONEDATA = 0;
+	public static final int ACTION_SHOW_LAST_MBG = 1;
+	
 	public static final int DEVICE_ID_LENGTH = 3;
 	public static final int NUMBER_OF_RETRIES = 5;
 	public static final int NUMBER_OF_EGVRECORDS = 20;

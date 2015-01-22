@@ -28,6 +28,7 @@
     <string name="lower_alarm_defval">70</string>
     <string name="close">Close Alert</string>
     <string name="alert">Alert</string>
+    <string name="mbg_label">Last MBG:</string>
     <style name="ButtonText">
     <item name="android:layout_width">fill_parent</item>
     <item name="android:layout_height">wrap_content</item>

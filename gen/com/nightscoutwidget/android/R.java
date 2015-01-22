@@ -50,14 +50,20 @@ public final class R {
         public static final int button1=0x7f090001;
         public static final int devBattery=0x7f090008;
         public static final int device_battery_text_id=0x7f090009;
-        public static final int imageButton1=0x7f090012;
+        public static final int imageButton1=0x7f090018;
         public static final int insulin_data_id=0x7f09000c;
-        public static final int minute_id=0x7f090011;
-        public static final int phoneBattery=0x7f09000f;
-        public static final int phone_battery_label_id=0x7f09000d;
-        public static final int phone_battery_text_id=0x7f090010;
+        public static final int linearLayout2=0x7f09000d;
+        public static final int linearLayout3=0x7f090013;
+        public static final int mbg_label=0x7f090014;
+        public static final int mbg_time_id=0x7f090017;
+        public static final int mbg_value=0x7f090016;
+        public static final int minute_id=0x7f090012;
+        public static final int phoneBattery=0x7f090010;
+        public static final int phone_battery_label_id=0x7f09000e;
+        public static final int phone_battery_text_id=0x7f090011;
         public static final int relativeInslayout=0x7f09000a;
-        public static final int relativelayout2=0x7f09000e;
+        public static final int relativelayout2=0x7f09000f;
+        public static final int relativelayout3=0x7f090015;
         public static final int resIcon=0x7f09000b;
         public static final int sgv_id=0x7f090005;
     }
@@ -86,6 +92,7 @@ public final class R {
         public static final int lower_alarm_defval=0x7f060018;
         public static final int lower_warning=0x7f060012;
         public static final int lower_warning_defval=0x7f060016;
+        public static final int mbg_label=0x7f06001b;
         public static final int phone_battery=0x7f060009;
         public static final int phone_battlabel=0x7f06000b;
         public static final int self_destruct=0x7f060007;

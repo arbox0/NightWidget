@@ -10,7 +10,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -23,12 +25,24 @@ import com.nightscoutwidget.android.medtronic.Constants;
  */
 public class CGMWidget extends AppWidgetProvider {
 	private PendingIntent service = null;  
+	
 	 public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
 	        final int N = appWidgetIds.length;
 	        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 	        // Perform this loop procedure for each App Widget that belongs to this provider
 	        for (int i=0; i<N; i++) {
 	            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_main);
+	            
+	            if (prefs.getBoolean("showSGV", true)){
+					views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
+					
+					views.setViewVisibility(R.id.linearLayout3, View.GONE);	
+				}else if (!prefs.getBoolean("showSGV", true)){
+					
+					views.setViewVisibility(R.id.linearLayout2, View.GONE);
+					
+					views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);	
+				}
 	            String webUri = null;
 	    		if (prefs.contains("web_uri"))
 	    			webUri = prefs.getString("web_uri", "http://www.nightscout.info/wiki/welcome");
@@ -36,7 +50,6 @@ public class CGMWidget extends AppWidgetProvider {
 		    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
 			        PendingIntent pendingIntent = PendingIntent.getActivity(context, 7, intent, 0);
 			        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
-			        
 	    		}
 	    		if (prefs.getBoolean("showIcon", true)){
 	    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
@@ -78,9 +91,16 @@ public class CGMWidget extends AppWidgetProvider {
 	            }
 	        }
 	    }
+	 @Override
+	 public void onDeleted(Context context, int[] AppWidgetIds){
+		 final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
+		  
+	        m.cancel(service);  
+	 }
 	 @Override  
 	    public void onDisabled(Context context)  
 	    {  
+		 
 	        final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
 	  
 	        m.cancel(service);  

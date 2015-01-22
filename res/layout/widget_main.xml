@@ -5,39 +5,44 @@
     android:background="@android:color/background_dark"
     android:orientation="vertical"
     android:padding="@dimen/widget_margin" >
-	<LinearLayout 
-	    android:layout_width="match_parent"
-	    android:layout_height="wrap_content"
-	    android:background="@android:color/background_dark"
-	    android:orientation="horizontal">
-	    <ImageButton
-        android:id="@+id/imageButton1"
-        android:layout_width="44dp"
-        android:layout_height="match_parent"
-        android:background="#000000"
-        android:contentDescription="@string/but_contentDesc"
-        android:src="@drawable/ic_launcher" />
-	    <TextView
-	        android:id="@+id/sgv_id"
-	        android:layout_width="wrap_content"
-	        android:layout_height="match_parent"
-	        android:text="@string/arrow_none"
-	        android:textColor="#ffffff"
-	        android:textSize="40sp"
-	        android:gravity="center_vertical|right" />
-	    <TextView
-	        android:id="@+id/arrow_id"
-	        android:layout_width="wrap_content"
-	        android:layout_height="match_parent"
-	        android:text="@string/arrow_none"
-	        android:textColor="#ffffff"
-	        android:textSize="24sp" 
-	        android:gravity="center_vertical|right"/>
-	    <LinearLayout
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/background_dark"
+        android:orientation="horizontal" >
+
+        <ImageButton
+            android:id="@+id/imageButton1"
+            android:layout_width="44dp"
+            android:layout_height="match_parent"
+            android:background="#000000"
+            android:contentDescription="@string/but_contentDesc"
+            android:src="@drawable/ic_launcher" />
+
+        <TextView
+            android:id="@+id/sgv_id"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical|right"
+            android:text="@string/arrow_none"
+            android:textColor="#ffffff"
+            android:textSize="40sp" />
+
+        <TextView
+            android:id="@+id/arrow_id"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical|right"
+            android:text="@string/arrow_none"
+            android:textColor="#ffffff"
+            android:textSize="24sp" />
+
+        <LinearLayout
             android:id="@+id/LinearLayout1"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent" 
-            android:layout_marginLeft="2dp">
+            android:layout_height="match_parent"
+            android:layout_marginLeft="2dp" >
 
             <ImageButton
                 android:id="@+id/devBattery"
@@ -61,9 +66,9 @@
                 android:text="@string/default_dev_batt"
                 android:textColor="#ffffff"
                 android:textSize="12sp" />
-
         </LinearLayout>
-	    <LinearLayout
+
+        <LinearLayout
             android:id="@+id/relativeInslayout"
             android:layout_width="wrap_content"
             android:layout_height="match_parent" >
@@ -90,23 +95,26 @@
                 android:text="@string/insulin_data_default"
                 android:textColor="#ffffff"
                 android:textSize="12sp" />
-    
         </LinearLayout>
-	</LinearLayout>
-	<LinearLayout 
-	    android:layout_width="match_parent"
-	    android:layout_height="wrap_content"
-	    android:background="@android:color/background_dark"
-	    android:orientation="horizontal">
-     <TextView
-        android:id="@+id/phone_battery_label_id"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:gravity="center_vertical|right"
-        android:text="@string/phone_battlabel"
-        android:textSize="14sp"
-        android:textColor="#ffffff"/>
-	<LinearLayout
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/background_dark"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:id="@+id/phone_battery_label_id"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical|right"
+            android:text="@string/phone_battlabel"
+            android:textColor="#ffffff"
+            android:textSize="14sp" />
+
+        <LinearLayout
             android:id="@+id/relativelayout2"
             android:layout_width="wrap_content"
             android:layout_height="match_parent" >
@@ -132,15 +140,59 @@
                 android:text="@string/default_phone_batt"
                 android:textColor="#ffffff"
                 android:textSize="12sp" />
-             <TextView
-	        android:id="@+id/minute_id"
-	        android:layout_width="wrap_content"
-	        android:layout_height="match_parent"
-	        android:text="@string/arrow_none"
-	        android:textColor="#ffffff"
-	        android:textSize="16sp"
-	        android:gravity="center" />
-       </LinearLayout>
+
+            <TextView
+                android:id="@+id/minute_id"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/arrow_none"
+                android:textColor="#ffffff"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/background_dark"
+        android:orientation="horizontal"
+        android:visibility="gone" >
+
+        <TextView
+            android:id="@+id/mbg_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/mbg_label"
+            android:textColor="#ffffff"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:id="@+id/relativelayout3"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" >
+
+            <TextView
+                android:id="@+id/mbg_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|left"
+                android:gravity="center"
+                android:text="@string/arrow_none"
+                android:textColor="#ffffff"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/mbg_time_id"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/arrow_none"
+                android:textColor="#ffffff"
+                android:textSize="16sp" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>

@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -32,14 +33,17 @@ import com.nightscoutwidget.android.medtronic.Constants;
 public class CGMWidgetUpdater extends Service {
 
 	public static int UPDATE_FREQUENCY_SEC = 10;
+	
 	SharedPreferences prefs;
 	DownloadHelper dwHelper = null;
 	private int cgmSelected = Constants.DEXCOMG4;
 	private boolean iUnderstand = false;
-
+	private int currentAction = Constants.ACTION_SHOW_PHONEDATA;
+	
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		Log.i("MED","CREATEEEEE");
 		prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		if (prefs.contains("IUNDERSTAND"))
 			iUnderstand = prefs.getBoolean("IUNDERSTAND", false);
@@ -51,11 +55,11 @@ public class CGMWidgetUpdater extends Service {
 				cgmSelected = Constants.DEXCOMG4;
 			}
 		}
-
 	}
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		Log.i("MED","onStartCommand");
 		if (prefs.contains("IUNDERSTAND")) {
 			iUnderstand = prefs.getBoolean("IUNDERSTAND", false);
 		} else if (prefs.contains("monitor_type")) {
@@ -66,13 +70,16 @@ public class CGMWidgetUpdater extends Service {
 				cgmSelected = Constants.DEXCOMG4;
 			}
 		}
+		if (dwHelper!= null){
+			dwHelper.mHandlerToggleInfo.removeCallbacks(dwHelper.mToggleRunnableAction);
+		}
 		buildUpdate();
 
 		return super.onStartCommand(intent, flags, startId);
 	}
 
 	private void buildUpdate() {
-
+		Log.i("MED","buildUpdate");
 		RemoteViews views = null;
 		KeyguardManager myKM = (KeyguardManager) getBaseContext()
 				.getSystemService(Context.KEYGUARD_SERVICE);
@@ -116,11 +123,11 @@ public class CGMWidgetUpdater extends Service {
 
 		Object list[] = { thisWidget, manager, views };
 		dwHelper.execute(list);
-
+		//mHandlerToggleInfo.removeCallbacks(aux);
 		// Push update for this widget to the home screen
 
 	}
-
+	
 	public JSONObject loadClassFile(File f) {
 		ObjectInputStream ois = null;
 		try {
