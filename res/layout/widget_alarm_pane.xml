@@ -11,15 +11,57 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center"
+        android:layout_marginBottom="50dp"
         android:text="@string/close" />
+
+    <CheckBox
+        android:id="@+id/enableAlarm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:checked="true"
+        android:text="@string/enable_alarm" />
+
+    <TextView
+        android:id="@+id/alarm_after"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|left"
+        android:layout_marginBottom="10dp"
+        android:text="@string/alarm_after_label"
+        android:textColor="#ffffff" />
+
+	   <EditText
+	       android:id="@+id/time_text"
+	       android:layout_width="wrap_content"
+	       android:layout_height="wrap_content"
+	       android:layout_gravity="bottom|left"
+	       android:layout_marginLeft="40dp"
+	       android:gravity="bottom|center"
+	       android:hint="@string/alarm_2hours_default"
+	       android:inputType="number"
+	       android:paddingLeft="50dp" >
+
+     </EditText>
+
+    <TextView
+        android:id="@+id/alarm_min"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|left"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="130dp"
+        android:gravity="bottom|left"
+        android:text="@string/alarm_minutes_label"
+        android:textColor="#ffffff" />
 
     <ImageView
         android:id="@+id/alerticon"
         android:layout_width="133dp"
-        android:contentDescription="@string/alert"
         android:layout_height="133dp"
         android:layout_gravity="top|center"
         android:layout_marginTop="50dp"
+        android:contentDescription="@string/alert"
         android:src="@drawable/red_warning" />
 
     <TextView
@@ -30,6 +72,7 @@
         android:layout_marginTop="200dp"
         android:text=""
         android:textAppearance="?android:attr/textAppearanceLarge" />
+
     <TextView
         android:id="@+id/alarm_text"
         android:layout_width="wrap_content"
@@ -38,6 +81,7 @@
         android:layout_marginTop="220dp"
         android:text=""
         android:textAppearance="?android:attr/textAppearanceMedium" />
-  
+
+    
 
 </FrameLayout>

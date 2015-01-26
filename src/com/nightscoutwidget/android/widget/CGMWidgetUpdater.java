@@ -70,6 +70,14 @@ public class CGMWidgetUpdater extends Service {
 				cgmSelected = Constants.DEXCOMG4;
 			}
 		}
+		if (!prefs.getBoolean("widgetEnabled", true)){
+			this.stopSelf();
+			if (dwHelper!= null){
+				dwHelper.mHandlerToggleInfo.removeCallbacks(dwHelper.mToggleRunnableAction);
+			}
+			return super.onStartCommand(intent, flags, startId);
+		}
+        
 		if (dwHelper!= null){
 			dwHelper.mHandlerToggleInfo.removeCallbacks(dwHelper.mToggleRunnableAction);
 		}
@@ -127,8 +135,16 @@ public class CGMWidgetUpdater extends Service {
 		// Push update for this widget to the home screen
 
 	}
+	@Override
+	public void onDestroy(){
+		Log.i("UPDATER", "ON DESTROY");
+		if (dwHelper!= null){
+			dwHelper.mHandlerToggleInfo.removeCallbacks(dwHelper.mToggleRunnableAction);
+		}
+	}
 	
 	public JSONObject loadClassFile(File f) {
+
 		ObjectInputStream ois = null;
 		try {
 			ois = new ObjectInputStream(new FileInputStream(f));

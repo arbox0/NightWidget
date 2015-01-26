@@ -29,6 +29,10 @@
     <string name="close">Close Alert</string>
     <string name="alert">Alert</string>
     <string name="mbg_label">Last MBG:</string>
+    <string name="enable_alarm">Enable Alarm</string>
+    <string name="alarm_after_label">After </string>
+    <string name="alarm_minutes_label"> Min.</string>
+     <string  name="alarm_2hours_default">120</string>
     <style name="ButtonText">
     <item name="android:layout_width">fill_parent</item>
     <item name="android:layout_height">wrap_content</item>

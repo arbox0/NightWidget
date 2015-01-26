@@ -785,15 +785,20 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 							.getBoolean("alarm_error", false);
 					boolean errorsgv_raised = prefs.getBoolean(
 							"error_sgvraised", false);
+					boolean alarm_sgv_enabled = prefs.getBoolean("alarmSgvEnableActive", false);
+					long alarmDiff =  prefs.getLong("alarm_sgv_reenable", 0);
+					long lastRaised = prefs.getLong("alarm_sgv_time", 0);
+					long current = System.currentTimeMillis();
 					String alarmerror_ringtone = prefs.getString(
 							"alarmerror_ringtone", "");
-					if (alarm_error && !errorsgv_raised
+					if (alarm_error && ((!errorsgv_raised) || ((alarm_sgv_enabled) && ((current - lastRaised) >= alarmDiff)))
 							&& alarmerror_ringtone != null
 							&& !alarmerror_ringtone.equals("")) {
 						SharedPreferences.Editor editor = prefs.edit();
 						editor.putBoolean("error_sgvraised", true);
 						editor.putInt("alarmType", Constants.ALARM_SGV_ERROR);
 						editor.putString("sgv", sgv);
+						editor.putLong("alarm_sgv_time", System.currentTimeMillis());
 						editor.commit();
 						Intent intent = new Intent(
 								context.getApplicationContext(),
@@ -907,13 +912,21 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					+ " Alarmraside " + alarmRaised);
 			views.setTextColor(R.id.sgv_id, color);
 			if (alarms_active) {
-				if (!alarmRaised && color == Color.RED && sound_alarm
+				boolean alarm_enabled = prefs.getBoolean("alarmEnableActive", false);
+				boolean warning_enabled = prefs.getBoolean("warningEnableActive", false);
+				long alarmDiff =  prefs.getLong("alarm_reenable", 0);
+				long lastRaised = prefs.getLong("alarm_time", 0);
+				long warningDiff =  prefs.getLong("warning_reenable", 0);
+				long wlastRaised = prefs.getLong("warning_time", 0);
+				long current = System.currentTimeMillis();
+				if ((!alarmRaised || ((alarm_enabled) && (current - lastRaised) >= alarmDiff)) && color == Color.RED && (sound_alarm )
 						&& alarm_ringtone != null && !alarm_ringtone.equals("")) {
 
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.putBoolean("alarmRaised", true);
 					editor.putInt("alarmType", Constants.ALARM);
 					editor.putString("sgv", "" + sgvInt);
+					editor.putLong("alarm_time", current);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
@@ -924,13 +937,15 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					editor.putBoolean("alarmRaised", true);
 					editor.commit();
 				}
-				if (!alarmRaised && !warningRaised && color == Constants.YELLOW
-						&& sound_warning && warning_ringtone != null
+				Log.i("TESTMED", " current "+ current+" wlastRaised "+ wlastRaised+" warning_enabled "+warning_enabled+" substract "+(current - wlastRaised)+" warningDIff" +warningDiff);
+				if ((!alarmRaised || ((alarm_enabled) && (current - lastRaised) >= alarmDiff)) && (!warningRaised || ((warning_enabled) && (current - wlastRaised) >= warningDiff))&& color == Constants.YELLOW
+						&& (sound_warning ) && warning_ringtone != null
 						&& !warning_ringtone.equals("")) {
 					SharedPreferences.Editor editor = prefs.edit();
 					editor.putInt("alarmType", Constants.WARNING);
 					editor.putBoolean("warningRaised", true);
 					editor.putString("sgv", "" + sgvInt);
+					editor.putLong("warning_time", current);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
@@ -977,7 +992,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		}
 		try {
 
-			mbgInt =  Float.parseFloat("100");
+			mbgInt =  Float.parseFloat(mbg);
 			if (prefs.getString("metric_preference", "1").equals("2"))
 				mbgInt = (float) mbgInt / divisor;
 
@@ -1044,6 +1059,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		RemoteViews views = null;
 		AppWidgetManager manager = null;
 		Context ctx = null;
+		String currentID = null;
 
 		public ToggleRunnableAction() {
 		}
@@ -1051,12 +1067,28 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
+			Log.i("widget", "TOGGLE");
 			SharedPreferences settings = PreferenceManager
 					.getDefaultSharedPreferences(ctx);
-			Log.i("widget", "TOGGLE");
+			String prevID = settings.getString("widget_prev_uuid","");
+			String actID = settings.getString("widget_uuid","");
 			long current = System.currentTimeMillis();
 			long diff = 0;
+			
+			if (currentID == null)
+				currentID = settings.getString("widget_uuid","");
 
+			if ( currentID == null || "".equals(currentID)){
+				mHandlerToggleInfo.removeCallbacks(this);
+				return;
+			}
+			
+			if (!settings.getBoolean("widgetEnabled", true) || prevID.equals(currentID) || !actID.equals(currentID)){
+				mHandlerToggleInfo.removeCallbacks(this);
+				return;
+				
+			}
+			
 			SharedPreferences.Editor editor = settings.edit();
 			if (settings.getLong("timeMBG", 0) != 0) {
 				diff = current - settings.getLong("timeMBG", 0);

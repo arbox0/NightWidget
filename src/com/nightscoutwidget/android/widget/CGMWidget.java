@@ -1,6 +1,7 @@
 package com.nightscoutwidget.android.widget;
 
 import java.util.Calendar;
+import java.util.UUID;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -28,9 +29,16 @@ public class CGMWidget extends AppWidgetProvider {
 	
 	 public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
 	        final int N = appWidgetIds.length;
+	        Log.i("M","ON UPDATE WIDGET!!!");
 	        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 	        // Perform this loop procedure for each App Widget that belongs to this provider
+	        SharedPreferences.Editor editor= prefs.edit();
+	        editor.putBoolean("widgetEnabled", true);
+	        if (!prefs.contains("widget_uuid"))
+	        	editor.putString("widget_uuid", UUID.randomUUID().toString());
+	        editor.commit();
 	        for (int i=0; i<N; i++) {
+	        	Log.i("M","N "+N);
 	            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_main);
 	            
 	            if (prefs.getBoolean("showSGV", true)){
@@ -68,7 +76,7 @@ public class CGMWidget extends AppWidgetProvider {
 	      
 	            if (service == null)  
 	            {  
-	                service = PendingIntent.getService(context, 0, in, PendingIntent.FLAG_CANCEL_CURRENT);  
+	                service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
 	            }  
 	            if (prefs.contains("refreshPeriod")){
 	            	String type = prefs.getString("refreshPeriod", "2");
@@ -93,17 +101,32 @@ public class CGMWidget extends AppWidgetProvider {
 	    }
 	 @Override
 	 public void onDeleted(Context context, int[] AppWidgetIds){
+		 Log.i("M","onDeleted");
 		 final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
-		  
-	        m.cancel(service);  
+		 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+	        // Perform this loop procedure for each App Widget that belongs to this provider
+	        SharedPreferences.Editor editor= prefs.edit();
+	        editor.putBoolean("widgetEnabled", false);
+	        editor.putString("widget_prev_uuid", prefs.getString("widget_uuid", ""));
+	        editor.remove("widget_uuid");
+	        editor.commit();
+	        m.cancel(service);
 	 }
 	 @Override  
 	    public void onDisabled(Context context)  
 	    {  
-		 
+		 Log.i("M","onDisabled");
+		 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+	        // Perform this loop procedure for each App Widget that belongs to this provider
+	        SharedPreferences.Editor editor= prefs.edit();
+	        editor.putBoolean("widgetEnabled", false);
+	        editor.putString("widget_prev_uuid", prefs.getString("widget_uuid", ""));
+	        editor.remove("widget_uuid");
+	        editor.commit();
 	        final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
 	  
 	        m.cancel(service);  
+	        
 	    }  
 	
 }
