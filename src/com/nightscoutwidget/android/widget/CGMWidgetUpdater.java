@@ -3,8 +3,10 @@ package com.nightscoutwidget.android.widget;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
+import java.util.UUID;
 
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 import android.app.KeyguardManager;
 import android.app.PendingIntent;
@@ -15,15 +17,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import ch.qos.logback.classic.Logger;
+
 import com.nightscoutwidget.android.R;
 import com.nightscoutwidget.android.download.DownloadHelper;
+import com.nightscoutwidget.android.download.ToggleRunnableAction;
 import com.nightscoutwidget.android.medtronic.Constants;
 /**
  * 
@@ -33,18 +36,25 @@ import com.nightscoutwidget.android.medtronic.Constants;
 public class CGMWidgetUpdater extends Service {
 
 	public static int UPDATE_FREQUENCY_SEC = 10;
+	private Logger log = (Logger)LoggerFactory.getLogger(CGMWidget.class.getName());
 	
 	SharedPreferences prefs;
 	DownloadHelper dwHelper = null;
 	private int cgmSelected = Constants.DEXCOMG4;
 	private boolean iUnderstand = false;
 	private int currentAction = Constants.ACTION_SHOW_PHONEDATA;
-	
+	private String uuid = null;
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		Log.i("MED","CREATEEEEE");
 		prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		log.info("CREATEEEEEEE");
+		 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+	        // Perform this loop procedure for each App Widget that belongs to this provider
+	        SharedPreferences.Editor editor= prefs.edit();
+	        uuid = UUID.randomUUID().toString();
+	        editor.putString("widget_uuid", uuid);
+	        editor.commit();
 		if (prefs.contains("IUNDERSTAND"))
 			iUnderstand = prefs.getBoolean("IUNDERSTAND", false);
 		if (prefs.contains("monitor_type")) {
@@ -59,7 +69,7 @@ public class CGMWidgetUpdater extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		Log.i("MED","onStartCommand");
+		log.info("onStartCommand");
 		if (prefs.contains("IUNDERSTAND")) {
 			iUnderstand = prefs.getBoolean("IUNDERSTAND", false);
 		} else if (prefs.contains("monitor_type")) {
@@ -73,12 +83,14 @@ public class CGMWidgetUpdater extends Service {
 		if (!prefs.getBoolean("widgetEnabled", true)){
 			this.stopSelf();
 			if (dwHelper!= null){
+				log.info("remove toggle");
 				dwHelper.mHandlerToggleInfo.removeCallbacks(dwHelper.mToggleRunnableAction);
 			}
 			return super.onStartCommand(intent, flags, startId);
 		}
-        
+		
 		if (dwHelper!= null){
+			log.info("remove toggle");
 			dwHelper.mHandlerToggleInfo.removeCallbacks(dwHelper.mToggleRunnableAction);
 		}
 		buildUpdate();
@@ -87,7 +99,7 @@ public class CGMWidgetUpdater extends Service {
 	}
 
 	private void buildUpdate() {
-		Log.i("MED","buildUpdate");
+		log.info("buildUpdate");
 		RemoteViews views = null;
 		KeyguardManager myKM = (KeyguardManager) getBaseContext()
 				.getSystemService(Context.KEYGUARD_SERVICE);
@@ -102,7 +114,7 @@ public class CGMWidgetUpdater extends Service {
 		} else {
 			views = new RemoteViews(getPackageName(), R.layout.widget_main);
 			String webUri = null;
-			if (prefs.contains("web_uri"))
+			if (prefs.getString("web_uri","").trim().equalsIgnoreCase(""))
 				webUri = prefs.getString("web_uri",
 						"http://www.nightscout.info/wiki/welcome");
 			if (webUri != null && webUri.length() > 0
@@ -120,24 +132,37 @@ public class CGMWidgetUpdater extends Service {
     		}
 
 		}
-		if (!iUnderstand) {
-			views.setTextViewText(R.id.sgv_id, "Please, Accept Disclaimer!!");
-			return;
-		}
-		dwHelper = new DownloadHelper(getBaseContext(), cgmSelected, prefs);
-		dwHelper.setPrefs(prefs);
+		
 		ComponentName thisWidget = new ComponentName(this, CGMWidget.class);
 		AppWidgetManager manager = AppWidgetManager.getInstance(this);
-
+		
+		if (!iUnderstand) {
+			views.setTextViewText(R.id.sgv_id, "Please, Accept Disclaimer!!");
+			manager.updateAppWidget(thisWidget, views);
+			return;
+		}
+		
+		dwHelper = new DownloadHelper(getBaseContext(), cgmSelected, prefs);
+		dwHelper.setPrefs(prefs);
+		
+	
+		dwHelper.mToggleRunnableAction = new ToggleRunnableAction();
+		dwHelper.mToggleRunnableAction.ctx = getBaseContext();
+		dwHelper.mToggleRunnableAction.thisWidget = thisWidget;
+		dwHelper.mToggleRunnableAction.manager = manager;
+		dwHelper.mToggleRunnableAction.views = views;
+		dwHelper.mToggleRunnableAction.currentID = uuid;
+		dwHelper.mToggleRunnableAction.mHandlerToggleInfo = dwHelper.mHandlerToggleInfo;
 		Object list[] = { thisWidget, manager, views };
 		dwHelper.execute(list);
+		
 		//mHandlerToggleInfo.removeCallbacks(aux);
 		// Push update for this widget to the home screen
 
 	}
 	@Override
 	public void onDestroy(){
-		Log.i("UPDATER", "ON DESTROY");
+		log.info("ON DESTROY UPDATER");
 		if (dwHelper!= null){
 			dwHelper.mHandlerToggleInfo.removeCallbacks(dwHelper.mToggleRunnableAction);
 		}
@@ -152,12 +177,11 @@ public class CGMWidgetUpdater extends Service {
 			ois.close();
 			return (JSONObject) o;
 		} catch (Exception ex) {
-			Log.w("CGMWidget", " unable to loadEGVRecord");
 			try {
 				if (ois != null)
 					ois.close();
 			} catch (Exception e) {
-				Log.e("CGMWidget", " Error closing ObjectInputStream");
+				log.error("Error", e);
 			}
 		}
 		return new JSONObject();

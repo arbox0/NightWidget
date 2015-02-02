@@ -22,6 +22,7 @@ import com.nightscoutwidget.android.R;
 
 public class SettingsFragment extends PreferenceFragment implements
 		OnSharedPreferenceChangeListener {
+	//private Logger log = (Logger)LoggerFactory.getLogger(SettingsFragment.class.getName());
 	int mAppWidgetId = 0;
 	SettingsActivity sact = null;
 	Context context;

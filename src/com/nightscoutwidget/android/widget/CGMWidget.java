@@ -1,17 +1,22 @@
 package com.nightscoutwidget.android.widget;
 
 import java.util.Calendar;
-import java.util.UUID;
+import java.util.Locale;
+
+import org.slf4j.LoggerFactory;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
@@ -19,114 +24,362 @@ import android.widget.RemoteViews;
 
 import com.nightscoutwidget.android.R;
 import com.nightscoutwidget.android.medtronic.Constants;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.util.StatusPrinter;
 /**
  * 
  * @author lmmarguenda
  *
  */
 public class CGMWidget extends AppWidgetProvider {
-	private PendingIntent service = null;  
+	//private Logger log = (Logger)LoggerFactory.getLogger(CGMWidget.class.getName());
+	private Logger log = (Logger)LoggerFactory.getLogger(CGMWidget.class.getName());
+	private static PendingIntent service = null;  
+	private static int MAX_OPORTUNITIES = 4;
+	public static String TRIGGER_CONFIGURATION_ACTION = "android.nigthwidget.action.TRIGGER_CONFIGURATION_ACTION";
+	public static Handler mHandlerWatchService = new Handler();
+	public static WatchServiceAction mWatchAction = null;
 	
-	 public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-	        final int N = appWidgetIds.length;
-	        Log.i("M","ON UPDATE WIDGET!!!");
+	 @Override
+	 public void onEnabled(Context context) {
+		 if (android.os.Build.VERSION.SDK_INT > 9) 
+			{
+			    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+			    StrictMode.setThreadPolicy(policy);
+			}
+		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+		 settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
+		 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+		 LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+		    StatusPrinter.print(lc);
+		 int[] appWidgetIDs = appWidgetManager
+		     .getAppWidgetIds(new ComponentName(context, CGMWidget.class));
+		 if (appWidgetIDs.length > 0)
+		 {
+			 log.info("ENABLE Length "+appWidgetIDs.length);
+			 String key = "widget_configuring_"+appWidgetIDs[0];
+			 if (!settings.contains(key))
+				 settings.edit().putBoolean(key, true).commit();
+		 }
+			 log.debug("ON ENABLE WIDGET!!!");
+	        CGMWidget.service = null;
 	        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 	        // Perform this loop procedure for each App Widget that belongs to this provider
 	        SharedPreferences.Editor editor= prefs.edit();
 	        editor.putBoolean("widgetEnabled", true);
-	        if (!prefs.contains("widget_uuid"))
-	        	editor.putString("widget_uuid", UUID.randomUUID().toString());
 	        editor.commit();
-	        for (int i=0; i<N; i++) {
-	        	Log.i("M","N "+N);
-	            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_main);
-	            
-	            if (prefs.getBoolean("showSGV", true)){
-					views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
-					
-					views.setViewVisibility(R.id.linearLayout3, View.GONE);	
-				}else if (!prefs.getBoolean("showSGV", true)){
-					
-					views.setViewVisibility(R.id.linearLayout2, View.GONE);
-					
-					views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);	
-				}
-	            String webUri = null;
-	    		if (prefs.contains("web_uri"))
-	    			webUri = prefs.getString("web_uri", "http://www.nightscout.info/wiki/welcome");
-	    		if (webUri != null && webUri.length() > 0 && webUri.indexOf("http://")>=0){
-		    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
-			        PendingIntent pendingIntent = PendingIntent.getActivity(context, 7, intent, 0);
-			        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
-	    		}
-	    		if (prefs.getBoolean("showIcon", true)){
-	    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
-	    		}else{
-	    			views.setViewVisibility(R.id.imageButton1, View.GONE);
-	    		}
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_main);
+            
+            if (prefs.getBoolean("showSGV", true)){
+				views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
+				
+				views.setViewVisibility(R.id.linearLayout3, View.GONE);	
+			}else if (!prefs.getBoolean("showSGV", true)){
+				
+				views.setViewVisibility(R.id.linearLayout2, View.GONE);
+				
+				views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);	
+			}
+            String webUri = null;
+    		if (prefs.getString("web_uri","").trim().equalsIgnoreCase(""))
+    			webUri = prefs.getString("web_uri", "http://www.nightscout.info/wiki/welcome");
+    		if (webUri != null && webUri.length() > 0 && webUri.indexOf("http://")>=0){
+	    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
+		        PendingIntent pendingIntent = PendingIntent.getActivity(context, 7, intent, 0);
+		        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
+    		}
+    		if (prefs.getBoolean("showIcon", true)){
+    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+    		}else{
+    			views.setViewVisibility(R.id.imageButton1, View.GONE);
+    		}
 
-	            final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
-	            
-	            final Calendar TIME = Calendar.getInstance();  
+            final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
+            
+            final Calendar TIME = Calendar.getInstance();  
+            TIME.set(Calendar.MINUTE, 0);  
+            TIME.set(Calendar.SECOND, 0);  
+            TIME.set(Calendar.MILLISECOND, 0);  
+      
+            final Intent in = new Intent(context, CGMWidgetUpdater.class);  
+            int i = 100;
+            
+            boolean alarmUp = (PendingIntent.getService(context, 27, in, 
+			        PendingIntent.FLAG_NO_CREATE) != null);
+            while (alarmUp && i > 0){
+            	i--;
+            	PendingIntent pI = PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE);
+            	if (pI != null)
+            		pI.cancel();
+            	m.cancel(PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE));
+            	alarmUp = (PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE) != null);
+            	service = null;
+            }
+            log.debug("I HAVE KILLED SERVICES!!!");
+            if (service == null)  
+            {  
+                service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
+            }  
+            if (prefs.contains("refreshPeriod")){
+            	String type = prefs.getString("refreshPeriod", "2");
+            	long time = Constants.TIME_2_MIN_IN_MS;
+            	if (type.equalsIgnoreCase("1"))
+            		time = Constants.TIME_1_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("3"))
+            		time = Constants.TIME_3_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("4"))
+            		time = Constants.TIME_4_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("5"))
+            		time = Constants.TIME_5_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("6"))
+            		time = Constants.TIME_10_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("7"))
+            		time = Constants.TIME_20_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("8"))
+            		time = Constants.TIME_25_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("9"))
+            		time = Constants.TIME_30_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("10"))
+            		time = Constants.TIME_60_MIN_IN_MS;
+            	else
+            		time = Constants.TIME_2_MIN_IN_MS;
+            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
+            }
+            if (mWatchAction != null && mHandlerWatchService != null){
+            	mHandlerWatchService.removeCallbacks(mWatchAction);
+            }
+            mWatchAction = new WatchServiceAction(context);
+            mHandlerWatchService.postDelayed(mWatchAction, 15000);
+	    }
+	 @Override
+	 public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds){
+		 if (android.os.Build.VERSION.SDK_INT > 9) 
+			{
+			    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+			    StrictMode.setThreadPolicy(policy);
+			}
+		 AppWidgetHost appWidgetHost = new AppWidgetHost(context, 1); // for removing phantoms
+		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+		 SharedPreferences prefs = PreferenceManager
+			.getDefaultSharedPreferences(context);
+         final Intent in = new Intent(context, CGMWidgetUpdater.class);  
+   
+		 boolean alarmUp = (PendingIntent.getService(context, 27, in, 
+			        PendingIntent.FLAG_NO_CREATE) != null);
+		 long time = Constants.TIME_2_MIN_IN_MS;
+         	String type = prefs.getString("refreshPeriod", "2");
+         	if (type.equalsIgnoreCase("1"))
+         		time = Constants.TIME_1_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("3"))
+         		time = Constants.TIME_3_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("4"))
+         		time = Constants.TIME_4_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("5"))
+         		time = Constants.TIME_5_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("6"))
+         		time = Constants.TIME_10_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("7"))
+         		time = Constants.TIME_20_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("8"))
+         		time = Constants.TIME_25_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("9"))
+         		time = Constants.TIME_30_MIN_IN_MS;
+         	else if (type.equalsIgnoreCase("10"))
+         		time = Constants.TIME_60_MIN_IN_MS;
+         	else
+         		time = Constants.TIME_2_MIN_IN_MS;
+         
+
+		log.info("onUpdate "+ alarmUp);
+		 for (int i = 0; i < appWidgetIds.length; i++) {
+		     int id = appWidgetIds[i];
+		     String key = String.format(Locale.US,"appwidget%d_configured", id);
+		     if ((settings.contains("widget_configuring_"+id) && !settings.contains(key))){
+			     boolean isConfiguring = settings.getBoolean("widget_configuring_"+id, false);
+			     if ((!settings.getBoolean(key, false) && !isConfiguring)) {
+			         // delete the phantom appwidget
+			    	 log.info("onUPDATE KILLING "+key);
+			         appWidgetHost.deleteAppWidgetId(id);
+			         settings.edit().remove("widget_ops_"+id).commit();
+			         settings.edit().remove("widget_configuring_"+id).commit();
+			     }
+		     }else{
+		    	 int size = settings.getInt("widget_ops_"+id, 0);
+		    	 if (!settings.contains(key) && appWidgetIds.length > 1){
+			    	 if (size <= MAX_OPORTUNITIES)
+			    		 settings.edit().putInt("widget_ops_"+id, ++size).commit();
+			    	 else{
+			    		 log.info("onUPDATE END OF OPORTUNITIES KILLING "+key);
+				         appWidgetHost.deleteAppWidgetId(id);
+				         settings.edit().remove("widget_ops_"+id).commit();
+				         settings.edit().remove("widget_configuring_"+id).commit();
+			    	 }
+		    	 }
+		     }
+		 }
+		 final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+		 if (!alarmUp ){
+			 log.warn("ALARM IS DOWN I MUST REACTIVATE");
+			 final Calendar TIME = Calendar.getInstance();  
 	            TIME.set(Calendar.MINUTE, 0);  
 	            TIME.set(Calendar.SECOND, 0);  
 	            TIME.set(Calendar.MILLISECOND, 0);  
-	      
-	            final Intent in = new Intent(context, CGMWidgetUpdater.class);  
-	      
-	            if (service == null)  
-	            {  
-	                service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
-	            }  
-	            if (prefs.contains("refreshPeriod")){
-	            	String type = prefs.getString("refreshPeriod", "2");
-	            	long time = Constants.TIME_5_MIN_IN_MS;
-	            	if (type.equalsIgnoreCase("1"))
-	            		time = Constants.TIME_1_MIN_IN_MS;
-	            	else if (type.equalsIgnoreCase("3"))
-	            		time = Constants.TIME_10_MIN_IN_MS;
-	            	else if (type.equalsIgnoreCase("4"))
-	            		time = Constants.TIME_20_MIN_IN_MS;
-	            	else if (type.equalsIgnoreCase("5"))
-	            		time = Constants.TIME_25_MIN_IN_MS;
-	            	else if (type.equalsIgnoreCase("6"))
-	            		time = Constants.TIME_30_MIN_IN_MS;
-	            	else if (type.equalsIgnoreCase("7"))
-	            		time = Constants.TIME_60_MIN_IN_MS;
-	            	else
-	            		time = Constants.TIME_5_MIN_IN_MS;
+	         service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
 	            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
-	            }
-	        }
-	    }
+	         log.warn("ALARM IS DOWN I MUST REACTIVATE");
+		 }
+         
+
+	 }
 	 @Override
 	 public void onDeleted(Context context, int[] AppWidgetIds){
-		 Log.i("M","onDeleted");
-		 final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
-		 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-	        // Perform this loop procedure for each App Widget that belongs to this provider
-	        SharedPreferences.Editor editor= prefs.edit();
-	        editor.putBoolean("widgetEnabled", false);
-	        editor.putString("widget_prev_uuid", prefs.getString("widget_uuid", ""));
-	        editor.remove("widget_uuid");
-	        editor.commit();
-	        m.cancel(service);
+		 log.info("onDeleted");
+		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+		 for (int id : AppWidgetIds){
+			 String key = String.format(Locale.US,"appwidget%d_configured", id);
+			 settings.edit().remove("widget_ops_"+id).commit();
+	         settings.edit().remove("widget_configuring_"+id).commit();
+			 log.info("onDeleted "+key);
+			 if (settings.contains(key))
+				 settings.edit().remove(key).commit();
+		 }
 	 }
 	 @Override  
 	    public void onDisabled(Context context)  
 	    {  
-		 Log.i("M","onDisabled");
+		 log.info("onDisabled");
+		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+		 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+
+		 int[] appWidgetIDs = appWidgetManager
+		     .getAppWidgetIds(new ComponentName(context, CGMWidget.class));
+		 if (appWidgetIDs.length > 0)
+		 {
+			 log.info("DISABLE Length "+appWidgetIDs.length);
+			 String key = String.format(Locale.US,"appwidget%d_configured", appWidgetIDs[0]);
+			 settings.edit().remove("widget_ops_"+appWidgetIDs[0]).commit();
+	         settings.edit().remove("widget_configuring_"+appWidgetIDs[0]).commit();
+			 if (settings.contains(key))
+				 settings.edit().remove(key).commit();
+		 }
+		
 		 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 	        // Perform this loop procedure for each App Widget that belongs to this provider
 	        SharedPreferences.Editor editor= prefs.edit();
 	        editor.putBoolean("widgetEnabled", false);
-	        editor.putString("widget_prev_uuid", prefs.getString("widget_uuid", ""));
 	        editor.remove("widget_uuid");
 	        editor.commit();
 	        final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
 	  
-	        m.cancel(service);  
-	        
+	        if (service == null){
+				 log.info("ISNULL!!!!");
+			 }else
+				 m.cancel(service);
+	        final Intent in = new Intent(context, CGMWidgetUpdater.class);  
+            int i = 100;
+            
+            boolean alarmUp = (PendingIntent.getService(context, 27, in, 
+			        PendingIntent.FLAG_NO_CREATE) != null);
+            while (alarmUp && i > 0){
+            	log.warn("I AM KILLING SERVICES " +i);
+            	i--;
+            	PendingIntent pI = PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE);
+            	if (pI != null)
+            		pI.cancel();
+            	m.cancel(PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE));
+            	alarmUp = (PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE) != null);
+            	service = null;
+            }
+            log.warn("I HAVE KILLED SERVICES ");
+            mHandlerWatchService.removeCallbacks(mWatchAction);
 	    }  
+	 
 	
+	 class WatchServiceAction implements Runnable{
+		 Context context = null;
+		 public WatchServiceAction (Context context){
+			 this.context = context;
+		 }
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+		
+				 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+				 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            	String type = prefs.getString("refreshPeriod", "2");
+            	long time = Constants.TIME_2_MIN_IN_MS;
+            	if (type.equalsIgnoreCase("1"))
+            		time = Constants.TIME_1_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("3"))
+            		time = Constants.TIME_3_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("4"))
+            		time = Constants.TIME_4_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("5"))
+            		time = Constants.TIME_5_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("6"))
+            		time = Constants.TIME_10_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("7"))
+            		time = Constants.TIME_20_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("8"))
+            		time = Constants.TIME_25_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("9"))
+            		time = Constants.TIME_30_MIN_IN_MS;
+            	else if (type.equalsIgnoreCase("10"))
+            		time = Constants.TIME_60_MIN_IN_MS;
+            	else
+            		time = Constants.TIME_2_MIN_IN_MS;
+		         
+		         final Intent in = new Intent(context, CGMWidgetUpdater.class);  
+		   
+				 boolean alarmUp = (PendingIntent.getService(context, 27, in, 
+					        PendingIntent.FLAG_NO_CREATE) != null);
+				 long current = System.currentTimeMillis();
+				 boolean refresh = (current - settings.getLong("widget_ref_watch", current)) >= (time + 15000);
+				 
+				 
+				 final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+				 if (refresh){
+					 int i = 100;
+					 while (alarmUp && i > 0){
+			            	log.warn("I AM KILLING SERVICES" +i);
+			            	i--;
+			            	PendingIntent pI = PendingIntent.getService(context, 27, in, 
+			    			        PendingIntent.FLAG_NO_CREATE);
+			            	if (pI != null)
+			            		pI.cancel();
+			            	m.cancel(PendingIntent.getService(context, 27, in, 
+			    			        PendingIntent.FLAG_NO_CREATE));
+			            	alarmUp = (PendingIntent.getService(context, 27, in, 
+			    			        PendingIntent.FLAG_NO_CREATE) != null);
+			            	service = null;
+			         }
+					 settings.edit().putLong("widget_ref_watch", current).commit();
+				 }
+				Log.i("WatchTask", "WatchTask "+ alarmUp+ " "+(current - settings.getLong("widget_ref_watch", current))+" "+ time);
+				log.info("WatchTask "+ alarmUp+ " "+(current - settings.getLong("widget_ref_watch", current))+" "+ time);
+				 if (!alarmUp){
+					 log.warn("ALARM IS DOWN I MUST REACTIVATE");
+					 final Calendar TIME = Calendar.getInstance();  
+			            TIME.set(Calendar.MINUTE, 0);  
+			            TIME.set(Calendar.SECOND, 0);  
+			            TIME.set(Calendar.MILLISECOND, 0);  
+			         service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
+			         
+			         m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
+			         
+			         log.warn("ALARM REACTIVATED");
+				 }
+				 mHandlerWatchService.postDelayed(mWatchAction, 15000);
+			 }
+		
+		 
+	 }
 }

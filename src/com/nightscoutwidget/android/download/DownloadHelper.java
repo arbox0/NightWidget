@@ -8,7 +8,10 @@ import java.util.Locale;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
+import android.app.KeyguardManager;
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -18,12 +21,14 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
+
+import ch.qos.logback.classic.Logger;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -40,6 +45,8 @@ import com.mongodb.ServerAddress;
 import com.nightscoutwidget.android.R;
 import com.nightscoutwidget.android.alerts.AlertActivity;
 import com.nightscoutwidget.android.medtronic.Constants;
+import com.nightscoutwidget.android.settings.SettingsActivity;
+import com.nightscoutwidget.android.widget.CGMWidget;
 
 /**
  * This class has the responsability of download the last entries in the MongoDB
@@ -49,7 +56,7 @@ import com.nightscoutwidget.android.medtronic.Constants;
  * 
  */
 public class DownloadHelper extends AsyncTask<Object, Void, Void> {
-
+	private Logger log = (Logger)LoggerFactory.getLogger(CGMWidget.class.getName());
 	private static final String TAG = "DownloadHelper";
 
 	Context context;
@@ -57,7 +64,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	private SharedPreferences prefs = null;
 	public boolean isCalculating = false;
 	public JSONObject finalResult = null;
-	public ToggleRunnableAction mToggleRunnableAction = new ToggleRunnableAction();
+	public ToggleRunnableAction mToggleRunnableAction = null;
 	public Handler mHandlerToggleInfo = new Handler();
 
 	/**
@@ -95,7 +102,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 * @return
 	 */
 	private JSONObject doMongoDownload() {
-		Log.i("MED", "doMongoDownload");
+		log.info("doMongoDownload");
 		String dbURI = prefs.getString("MongoDB URI", null);
 		String collectionName = prefs.getString("Collection Name", "entries");
 		String dsCollectionName = prefs.getString(
@@ -157,8 +164,10 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						}
 					}
 				}
-				Log.d("NIGHTWIDGET", "Uri TO CHANGE user " + user + " host "
-						+ source + " password " + password);
+				log.debug("Uri TO CHANGE user " + user + " host "
+						+ source + " password " + 
+						password);
+				
 				if (bAchieved) {
 					MongoCredential mc = MongoCredential
 							.createMongoCRCredential(user, source,
@@ -215,7 +224,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				}
 				if (collectionName != null) {
 					dexcomData = db.getCollection(collectionName.trim());
-					Log.i("MEDTRONIC", "retrieving data");
+					log.info("retrieving data");
 					DBCursor dexcomCursor = dexcomData
 							.find(QueryBuilder.start("type").notEquals("mbg")
 									.get()).sort(new BasicDBObject("date", -1))
@@ -223,9 +232,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					DBCursor mbgCursor = dexcomData
 							.find(QueryBuilder.start("type").is("mbg").get())
 							.sort(new BasicDBObject("date", -1)).limit(1);
-					Log.i("MEDTRONIC", "retrieved data");
+					log.info("data retrieved");
 					if (dexcomCursor.hasNext()) {
-						Log.i("MEDTRONIC", "NEXT");
 						record = dexcomCursor.next();
 						if (record.containsField("date"))
 							result.put("date", record.get("date"));
@@ -248,7 +256,6 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						}
 					}
 					if (mbgCursor.hasNext()) {
-						Log.i("MEDTRONIC", "NEXT");
 						recordMbg = mbgCursor.next();
 						if (recordMbg.containsField("date"))
 							resultMbg.put("date", recordMbg.get("date"));
@@ -302,7 +309,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						e1.printStackTrace();
 					}
 				}
-				Log.e(TAG, sb1.toString());
+				log.error("Error",e);
 			}
 		}
 		if (finalResult == null)
@@ -319,7 +326,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 	@Override
 	protected Void doInBackground(Object... arg0) {
-		Log.i("MED", "DO IN BACKGROUND");
+		log.info("DO IN BACKGROUND");
 		if (arg0.length == 3) {
 			ComponentName thisWidget = null;
 			AppWidgetManager manager = null;
@@ -336,26 +343,106 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				views = (RemoteViews) arg0[2];
 			} else
 				return null;
-			this.mToggleRunnableAction.ctx = context;
-			this.mToggleRunnableAction.thisWidget = thisWidget;
-			this.mToggleRunnableAction.manager = manager;
-			this.mToggleRunnableAction.views = views;
+			
+			KeyguardManager myKM = (KeyguardManager) mToggleRunnableAction.ctx
+					.getSystemService(Context.KEYGUARD_SERVICE);
+			if (myKM.inKeyguardRestrictedInputMode()) {
+				if (prefs.getBoolean("showIcon", true)){
+	    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+	    		}else{
+	    			views.setViewVisibility(R.id.imageButton1, View.GONE);
+	    		}
+
+			} else {
+				String webUri = null;
+				if (prefs.contains("web_uri"))
+					webUri = prefs.getString("web_uri",
+							"http://www.nightscout.info/wiki/welcome");
+				if (webUri != null && webUri.length() > 0
+						&& webUri.indexOf("http://") >= 0) {
+					Intent intent = new Intent(Intent.ACTION_VIEW,
+							Uri.parse(webUri));
+					PendingIntent pendingIntent = PendingIntent.getActivity(
+							 mToggleRunnableAction.ctx, 7, intent, 0);
+					views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
+				}
+				if (prefs.getBoolean("showIcon", true)){
+	    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+	    		}else{
+	    			views.setViewVisibility(R.id.imageButton1, View.GONE);
+	    		}
+
+			}	
+			int[] appIDs = manager.getAppWidgetIds(thisWidget);
+			for (int id : appIDs){
+				
+				Intent intent = new Intent(mToggleRunnableAction.ctx,
+						SettingsActivity.class);
+				PendingIntent pendingIntent = PendingIntent.getActivity(mToggleRunnableAction.ctx, id, intent, 0);
+				views.setOnClickPendingIntent(R.id.widgetSetting, pendingIntent);
+			}
 			finalResult = doMongoDownload();
+			JSONObject result = new JSONObject();
 			if (finalResult != null && isOnline()){
-				Log.i("MED", "Final Result not null");
-				updateValues(finalResult, views);
+				log.info("Final Result not null");
+				result = updateValues(finalResult, views);
 			}else{
-				Log.i("MED", "Final Result is Null");
+				log.info("Final Result is null");
 			}
 			/*
 			 * else{ if (!isOnline()){ views.setTextColor(R.id.sgv_id,
 			 * Color.GRAY); views.setInt(R.id.sgv_id, "setPaintFlags",
 			 * Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG); } }
 			 */
-			if (isOnline())
-				manager.updateAppWidget(thisWidget, views);
-			mHandlerToggleInfo.removeCallbacks(mToggleRunnableAction);
-			mHandlerToggleInfo.postDelayed(mToggleRunnableAction, 20000);
+			if (finalResult != null && isOnline()){
+				boolean showMBG =  true;
+				boolean showInsulin = true;
+				boolean showUploaderBattery = true;
+				boolean showPumpBattery = true;
+				boolean showDataDifference = true;
+				try {
+					result.get("showMBG");
+					result.get("showInsulin");
+					result.get("showUploaderBattery");
+					result.get("showPumpBattery");
+					result.get("showDifference");
+				} catch (Exception e) {
+					// TODO: handle exception
+					log.error("update error", e);
+				}
+				mToggleRunnableAction.showMBG = showMBG;
+				mToggleRunnableAction.showInsulin = showInsulin;
+				mToggleRunnableAction.showUploaderBattery = showUploaderBattery;
+				mToggleRunnableAction.showPumpBattery = showPumpBattery;
+				mToggleRunnableAction.showDataDifference = showDataDifference;
+				if (showDataDifference){
+					views.setViewVisibility(R.id.difference, View.VISIBLE);
+				}else{
+					views.setViewVisibility(R.id.difference, View.GONE);
+				}
+						
+				if (showMBG && (!showUploaderBattery)){
+					views.setViewVisibility(R.id.linearLayout2, View.GONE);
+					views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);
+				}else{
+					views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
+					views.setViewVisibility(R.id.linearLayout3, View.GONE);
+				}
+				if (isOnline())
+					manager.updateAppWidget(thisWidget, views);
+				mHandlerToggleInfo.removeCallbacks(mToggleRunnableAction);
+				if ((showMBG && (showUploaderBattery))){
+					long current = System.currentTimeMillis();
+					mToggleRunnableAction.creationTime = current;
+					SharedPreferences prefs = PreferenceManager
+							.getDefaultSharedPreferences(mToggleRunnableAction.ctx);
+					prefs.edit().putLong("lastCreatedWidgetDate", current).commit();
+					mHandlerToggleInfo.postDelayed(mToggleRunnableAction, 10000);
+				}
+			}else
+				if (isOnline())
+					manager.updateAppWidget(thisWidget, views);
+			
 		}
 		/*
 		 * Intent intent = new Intent(context.getApplicationContext(),
@@ -386,113 +473,138 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 * @param views
 	 *            , Access to the Widget UI.
 	 */
-	public void updateValues(JSONObject resultTotal, RemoteViews views) {
-		Log.i("MED", "updateValues");
+	public JSONObject updateValues(JSONObject resultTotal, RemoteViews views) {
+		log.info("updateValues");
+		JSONObject updated = new JSONObject();
 		String sgv = "";
 		String mbg = "";
 		String direction = "";
 		int calibrationStatus = -1;
 		boolean isCalibrating = false;
+		boolean showMBG = prefs.getBoolean("show_MBG", true);
+		boolean showInsulin = prefs.getBoolean("show_insulin", true);
+		boolean showUploaderBattery = prefs.getBoolean("show_mobile_battery", true);
+		boolean showPumpBattery = prefs.getBoolean("show_pump_battery", true);
+		boolean showDataDifference = true;
+		try {
+			updated.put("showMBG", showMBG);
+			updated.put("showIncrement", showDataDifference);
+		} catch (Exception e) {
+			log.error("error pushing values on JSON");
+		}
+		
 		String calib = "---";
 		String batteryStatus = "Normal";
 		String itemSelected = prefs.getString("reservoir_ins_units", "2");
 		int max_ins_units = 300;
 
 		JSONObject result = null;
-		JSONObject mbgResult = null;
-		try {
-			mbgResult = resultTotal.getJSONObject("mbgResult");
-		} catch (JSONException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-			mbgResult = null;
-		}
-		if (mbgResult != null) {
+		if (showMBG){
+			JSONObject mbgResult = null;
 			try {
-				if (mbgResult.has("mbg") && mbgResult.getString("mbg") != null) {
-					mbg = mbgResult.getString("mbg");
-					if (mbg != null && !"".equals(mbg) && !"---".equals(mbg)) {
-						mbg = processMBGValue(mbg, views);
-						Log.i("EOOOMBG ",""+ mbg);
+				mbgResult = resultTotal.getJSONObject("mbgResult");
+			} catch (JSONException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				mbgResult = null;
+			}
+			if (mbgResult != null) {
+				
+				try {
+					if (mbgResult.has("mbg") && mbgResult.getString("mbg") != null) {
+						mbg = mbgResult.getString("mbg");
+						if (mbg != null && !"".equals(mbg) && !"---".equals(mbg)) {
+							mbg = processMBGValue(mbg, views);
+							log.info("MBG VALUE "+mbg);
+						}
+					}
+				} catch (Exception e) {
+					log.error("error",e);
+				}
+				
+					if (mbg == null)
+						mbg = "---";
+					views.setTextViewText(R.id.mbg_value, " " + mbg);
+					long date = 0;
+					if (mbgResult.has("date")) {
+						try {
+							date = mbgResult.getLong("date");
+						} catch (Exception e) {
+							date = 0;
+						}
+					} else
+						date = 0;
+					
+		
+					long current = System.currentTimeMillis();
+					long diff = current - date;
+		
+					if (diff == current || (diff / 60000 < 1)) {
+						views.setViewVisibility(R.id.mbg_time_id, View.GONE);
+					} else {
+		
+						views.setViewVisibility(R.id.mbg_time_id, View.VISIBLE);
+						if (diff / 60000 <= 60)
+							views.setTextViewText(R.id.mbg_time_id, " "
+									+ ((int) (diff / 60000)) + " m. ago");
+						else if (diff / Constants.TIME_60_MIN_IN_MS <= 24)
+							views.setTextViewText(R.id.mbg_time_id, " > "+((int)diff / Constants.TIME_60_MIN_IN_MS)+" h. ago");
+						else
+							views.setTextViewText(R.id.mbg_time_id, " > "+((int)((diff / Constants.TIME_60_MIN_IN_MS)/24))+" d. ago");
 					}
 				}
-			} catch (Exception e) {
-				Log.e("error", "error",e);
-			}
-
-			if (mbg == null)
-				mbg = "---";
-			views.setTextViewText(R.id.mbg_value, " " + mbg);
-			long date = 0;
-			if (mbgResult.has("date")) {
-				try {
-					date = mbgResult.getLong("date");
-				} catch (Exception e) {
-					date = 0;
-				}
-			} else
-				date = 0;
-
-			long current = System.currentTimeMillis();
-			long diff = current - date;
-
-			if (diff == current || (diff / 60000 < 1)) {
-				views.setViewVisibility(R.id.mbg_time_id, View.GONE);
-			} else {
-
-				views.setViewVisibility(R.id.mbg_time_id, View.VISIBLE);
-				if (diff / 60000 <= 60)
-					views.setTextViewText(R.id.mbg_time_id, " "
-							+ ((int) (diff / 60000)) + " min. ago");
-				else if (diff / Constants.TIME_60_MIN_IN_MS <= 24)
-					views.setTextViewText(R.id.mbg_time_id, " > 1 h. ago");
-				else
-					views.setTextViewText(R.id.mbg_time_id, " > 1 d. ago");
-			}
 		}
 		try {
 			result = resultTotal.getJSONObject("sgvResult");
 		} catch (JSONException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
-			return;
+			return updated;
 		}
 		if (result == null) {
-			return;
+			return updated;
 		}
 		boolean isWarmingUp = false;
-		try {
-			isWarmingUp = result.getBoolean("isWarmingUp");
-		} catch (Exception e) {
-			Log.e("error", "error",e);
+		if (result.has("isWarmingUp")){
+			try {
+				isWarmingUp = result.getBoolean("isWarmingUp");
+			} catch (Exception e) {
+				log.error("error",e);
+			}
 		}
 		if ("1".equalsIgnoreCase(itemSelected))
 			max_ins_units = 176;
 		else
 			max_ins_units = 300;
 		try {
-			if (result.has("insulinLeft")) {
-				views.setViewVisibility(R.id.insulin_data_id, View.VISIBLE);
-				views.setViewVisibility(R.id.resIcon, View.VISIBLE);
-				double percentage = (result.getDouble("insulinLeft") / max_ins_units) * 100.0;
-				if (percentage > 75)
-					views.setImageViewResource(R.id.resIcon,
-							R.drawable.res_full);
-				else if (percentage < 75 && percentage > 50)
-					views.setImageViewResource(R.id.resIcon,
-							R.drawable.res_green);
-				else if (percentage < 50 && percentage > 25)
-					views.setImageViewResource(R.id.resIcon,
-							R.drawable.res_yellow);
-				else
-					views.setImageViewResource(R.id.resIcon, R.drawable.res_red);
-				views.setTextViewText(
-						R.id.insulin_data_id,
-						""
-								+ new DecimalFormat("###").format(Math
-										.floor(result.getDouble("insulinLeft")))
-								+ " U");
-			} else {
+			if (showInsulin){
+				if (result.has("insulinLeft")) {
+					views.setViewVisibility(R.id.insulin_data_id, View.VISIBLE);
+					views.setViewVisibility(R.id.resIcon, View.VISIBLE);
+					double percentage = (result.getDouble("insulinLeft") / max_ins_units) * 100.0;
+					if (percentage > 75)
+						views.setImageViewResource(R.id.resIcon,
+								R.drawable.res_full);
+					else if (percentage < 75 && percentage > 50)
+						views.setImageViewResource(R.id.resIcon,
+								R.drawable.res_green);
+					else if (percentage < 50 && percentage > 25)
+						views.setImageViewResource(R.id.resIcon,
+								R.drawable.res_yellow);
+					else
+						views.setImageViewResource(R.id.resIcon, R.drawable.res_red);
+					views.setTextViewText(
+							R.id.insulin_data_id,
+							""
+									+ new DecimalFormat("###").format(Math
+											.floor(result.getDouble("insulinLeft")))
+									+ " U");
+				} else {
+					showInsulin = false;
+					views.setViewVisibility(R.id.insulin_data_id, View.GONE);
+					views.setViewVisibility(R.id.resIcon, View.GONE);
+				}
+			}else{
 				views.setViewVisibility(R.id.insulin_data_id, View.GONE);
 				views.setViewVisibility(R.id.resIcon, View.GONE);
 			}
@@ -501,50 +613,56 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			views.setViewVisibility(R.id.resIcon, View.GONE);
 		}
 		try {
-			if (result.has("batteryStatus")) {
-				views.setViewVisibility(R.id.devBattery, View.VISIBLE);
-				batteryStatus = (String) result.get("batteryStatus");
-				boolean isLow = false;
-				if (batteryStatus.toLowerCase(Locale.getDefault()).indexOf(
-						"normal") >= 0) {
-					views.setImageViewResource(R.id.devBattery,
-							R.drawable.battery_full_icon);
-				} else {
-					isLow = true;
-					views.setImageViewResource(R.id.devBattery,
-							R.drawable.battery_low_icon);
-				}
-				if (result.has("batteryVoltage")) {
-					views.setViewVisibility(R.id.device_battery_text_id,
-							View.VISIBLE);
-					String batteryVolt = (String) result.get("batteryVoltage");
-					views.setTextViewText(R.id.device_battery_text_id,
-							batteryVolt + "v");
-					if (batteryVolt != null && batteryVolt.length() > 0) {
-						double val = 0;
-						try {
-							val = Double.parseDouble(batteryVolt);
-						} catch (Exception e) {
-							// val is still 0
-						}
-						if (val > 0) {
-							if (val > 1.35) {
-								if (!isLow)
+			if (showPumpBattery){
+				if (result.has("batteryStatus")) {
+					views.setViewVisibility(R.id.devBattery, View.VISIBLE);
+					batteryStatus = (String) result.get("batteryStatus");
+					boolean isLow = false;
+					if (batteryStatus.toLowerCase(Locale.getDefault()).indexOf(
+							"normal") >= 0) {
+						views.setImageViewResource(R.id.devBattery,
+								R.drawable.battery_full_icon);
+					} else {
+						isLow = true;
+						views.setImageViewResource(R.id.devBattery,
+								R.drawable.battery_low_icon);
+					}
+					if (result.has("batteryVoltage")) {
+						views.setViewVisibility(R.id.device_battery_text_id,
+								View.VISIBLE);
+						String batteryVolt = (String) result.get("batteryVoltage");
+						views.setTextViewText(R.id.device_battery_text_id,
+								batteryVolt + "v");
+						if (batteryVolt != null && batteryVolt.length() > 0) {
+							double val = 0;
+							try {
+								val = Double.parseDouble(batteryVolt);
+							} catch (Exception e) {
+								// val is still 0
+							}
+							if (val > 0) {
+								if (val > 1.35) {
+									if (!isLow)
+										views.setImageViewResource(R.id.devBattery,
+												R.drawable.battery_full_icon);
+								} else if ((val < 1.3) && (val >= 1.2)) {
+									if (!isLow)
+										views.setImageViewResource(R.id.devBattery,
+												R.drawable.battery_half_icon);
+								} else if (val < 1.2) {
 									views.setImageViewResource(R.id.devBattery,
-											R.drawable.battery_full_icon);
-							} else if ((val < 1.3) && (val >= 1.2)) {
-								if (!isLow)
-									views.setImageViewResource(R.id.devBattery,
-											R.drawable.battery_half_icon);
-							} else if (val < 1.2) {
-								views.setImageViewResource(R.id.devBattery,
-										R.drawable.battery_low_icon);
+											R.drawable.battery_low_icon);
+								}
 							}
 						}
+					} else {
+						views.setViewVisibility(R.id.device_battery_text_id,
+								View.GONE);
 					}
-				} else {
-					views.setViewVisibility(R.id.device_battery_text_id,
-							View.GONE);
+				}else {
+					showPumpBattery = false;
+					views.setViewVisibility(R.id.devBattery, View.GONE);
+					views.setViewVisibility(R.id.device_battery_text_id, View.GONE);
 				}
 
 			} else {
@@ -567,6 +685,15 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			}
 		} catch (Exception e) {
 		}
+		long date = 0;
+		if (result.has("date")) {
+			try {
+				date = result.getLong("date");
+			} catch (Exception e) {
+				date = 0;
+			}
+		} else
+			date = 0;
 		try {
 			if (result.has("sgv") && result.getString("sgv") != null) {
 				sgv = result.getString("sgv");
@@ -585,8 +712,9 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					}
 					if (calib.indexOf("NC") >= 0 || calib.indexOf("DB") >= 0)
 						sgv = calib;
-					else
-						sgv = processSGVValue(sgv, views);
+					else{
+						sgv = processSGVValue(sgv, date, views);
+					}
 				} else if ("".equals(sgv) || "---".equals(sgv)) {
 					if (cgmSelected == Constants.MEDTRONIC_CGM)
 						calib = Constants.getWidgetCalAppend(calibrationStatus);
@@ -604,35 +732,43 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		} catch (Exception e) {
 		}
 		try {
-			if (result.has("uploaderBattery")) {
-				int phoneBatt = result.getInt("uploaderBattery");
-				if (phoneBatt >= 0) {
-
-					views.setViewVisibility(R.id.phoneBattery, View.VISIBLE);
-					views.setViewVisibility(R.id.phone_battery_label_id,
-							View.VISIBLE);
-					views.setViewVisibility(R.id.phone_battery_text_id,
-							View.VISIBLE);
-
-					if (phoneBatt > 50) {
-						views.setImageViewResource(R.id.phoneBattery,
-								R.drawable.battery_full_icon);
-					} else if (phoneBatt > 25 && phoneBatt < 50) {
-						views.setImageViewResource(R.id.phoneBattery,
-								R.drawable.battery_half_icon);
-					} else
-						views.setImageViewResource(R.id.phoneBattery,
-								R.drawable.battery_low_icon);
-					views.setTextViewText(R.id.phone_battery_text_id, phoneBatt
-							+ "%");
+			if (showUploaderBattery)
+			{
+				if (result.has("uploaderBattery")) {
+					int phoneBatt = result.getInt("uploaderBattery");
+					if (phoneBatt >= 0) {
+	
+						views.setViewVisibility(R.id.phoneBattery, View.VISIBLE);
+						views.setViewVisibility(R.id.phone_battery_label_id,
+								View.VISIBLE);
+						views.setViewVisibility(R.id.phone_battery_text_id,
+								View.VISIBLE);
+	
+						if (phoneBatt > 50) {
+							views.setImageViewResource(R.id.phoneBattery,
+									R.drawable.battery_full_icon);
+						} else if (phoneBatt > 25 && phoneBatt < 50) {
+							views.setImageViewResource(R.id.phoneBattery,
+									R.drawable.battery_half_icon);
+						} else
+							views.setImageViewResource(R.id.phoneBattery,
+									R.drawable.battery_low_icon);
+						views.setTextViewText(R.id.phone_battery_text_id, phoneBatt
+								+ "%");
+					} else {
+						views.setViewVisibility(R.id.phoneBattery, View.GONE);
+						views.setViewVisibility(R.id.phone_battery_label_id,
+								View.GONE);
+						views.setViewVisibility(R.id.phone_battery_text_id,
+								View.GONE);
+					}
 				} else {
+					showUploaderBattery = false;
 					views.setViewVisibility(R.id.phoneBattery, View.GONE);
-					views.setViewVisibility(R.id.phone_battery_label_id,
-							View.GONE);
-					views.setViewVisibility(R.id.phone_battery_text_id,
-							View.GONE);
+					views.setViewVisibility(R.id.phone_battery_label_id, View.GONE);
+					views.setViewVisibility(R.id.phone_battery_text_id, View.GONE);
 				}
-			} else {
+			}else{
 				views.setViewVisibility(R.id.phoneBattery, View.GONE);
 				views.setViewVisibility(R.id.phone_battery_label_id, View.GONE);
 				views.setViewVisibility(R.id.phone_battery_text_id, View.GONE);
@@ -645,20 +781,15 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		if (isWarmingUp) {
 			calib = "";
 			sgv = "W_Up";
+			showDataDifference = false;
 		}
-		if (calib.indexOf("NC") >= 0 || calib.indexOf("DB") >= 0)
+		if (calib.indexOf("NC") >= 0 || calib.indexOf("DB") >= 0){
+			showDataDifference = false;
 			views.setTextViewText(R.id.sgv_id, calib);
-		else
+		}else{
 			views.setTextViewText(R.id.sgv_id, sgv + calib);
-		long date = 0;
-		if (result.has("date")) {
-			try {
-				date = result.getLong("date");
-			} catch (Exception e) {
-				date = 0;
-			}
-		} else
-			date = 0;
+		}
+		
 
 		long current = System.currentTimeMillis();
 		long diff = current - date;
@@ -748,13 +879,32 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				views.setTextColor(R.id.minute_id, Color.WHITE);
 			if (diff / 60000 <= 60)
 				views.setTextViewText(R.id.minute_id, " "
-						+ ((int) (diff / 60000)) + " min.");
+						+ ((int) (diff / 60000)) + " m.");
 			else if (diff / Constants.TIME_60_MIN_IN_MS <= 24)
-				views.setTextViewText(R.id.minute_id, " > 1 h.");
+				views.setTextViewText(R.id.minute_id, ((int)diff / Constants.TIME_60_MIN_IN_MS)+" h.");
 			else
-				views.setTextViewText(R.id.minute_id, " > 1 d.");
+				views.setTextViewText(R.id.minute_id, ((int)((diff / Constants.TIME_60_MIN_IN_MS)/24))+" d.");
 		}
 		views.setTextViewText(R.id.arrow_id, getArrow(direction));
+		try{
+			updated.put("showInsulin", showInsulin);
+			updated.put("showMBG", showMBG);
+			updated.put("showUploaderBattery", showUploaderBattery);
+			updated.put("showPumpBattery", showPumpBattery);
+			if (showDataDifference){
+				String diffData = prefs.getString("currentDataDiff","");
+				log.info("SHOWDATA2 "+diffData);
+				if (diffData != null && !diffData.equalsIgnoreCase("")){
+					log.info("SHOWDATA3 "+diffData);
+					views.setTextViewText(R.id.difference, diffData);
+				}else
+					showDataDifference = false;
+			}
+			updated.put("showDifference", showDataDifference);
+		}catch(Exception e){
+			log.error("Uploader Error",e);
+		}
+		return updated;
 	}
 
 	/**
@@ -766,8 +916,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 * @param views
 	 *            , access to the Widget UI.
 	 */
-	private String processSGVValue(String sgv, RemoteViews views) {
-		Log.i("processSGVValue", "processSGVValue " + sgv);
+	private String processSGVValue(String sgv, long date, RemoteViews views) {
+		log.info("processSGVValue " + sgv);
 		Float sgvInt = -1f;
 		boolean alarms_active = prefs.getBoolean("alarms_active", true);
 		float divisor = 1;
@@ -811,17 +961,28 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						editor.commit();
 					}
 				}
+			}else{
+				if (!Constants.checkSgvErrorValue(sgv)) {
+					sgvInt = (float) Integer.parseInt(sgv);
+					if (prefs.getString("metric_preference", "1").equals("2"))
+						sgvInt = sgvInt / divisor;
+				}
 			}
 
 		} catch (Exception e) {
-			Log.e("error", "error",e);
+			log.error("error", e);
 		}
-		Log.i("processSGVValue", "processSGVValueINT " + sgvInt);
+		log.info("processSGVValueINT " + sgvInt);
 		if (sgvInt <= 0) {
+			views.setInt(R.id.sgv_id, "setPaintFlags", 0);
 			views.setTextColor(R.id.sgv_id, Color.WHITE);
+			SharedPreferences.Editor editor = prefs.edit();
+			editor.remove("previousSVGVALUE");
+			editor.remove("currentDataDiff");
+			editor.commit();
 			return sgv;
 		} else {
-			Log.i("processSGVValue", "processSGVValueInside!! ");
+			log.info("processSGVValueInside " + sgvInt);
 			boolean sound_alarm = prefs.getBoolean("sound_alarm", true);
 			boolean sound_warning = prefs.getBoolean("sound_warning", false);
 			boolean alarmRaised = prefs.getBoolean("alarmRaised", false);
@@ -844,7 +1005,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 							.getString("upper_warning_color", ""
 									+ ((float) (140 / divisor))).replace(",", "."));
 			} catch (Exception e) {
-				Log.e("error", "error",e);
+				log.error("error", e);
 			}
 			try {
 				if (prefs.getString("metric_preference", "1").equals("1"))
@@ -857,7 +1018,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 									"" + ((float) (80 / divisor))).replace(",", "."));
 
 			} catch (Exception e) {
-				Log.e("error", "error",e);
+				log.error("error", e);
 			}
 			try {
 				if (prefs.getString("metric_preference", "1").equals("1"))
@@ -868,7 +1029,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 							"upper_alarm_color", "" + ((float) (170 / divisor))).replace(",", "."));
 
 			} catch (Exception e) {
-				Log.e("error", "error",e);
+				log.error("error", e);
 			}
 			try {
 				if (prefs.getString("metric_preference", "1").equals("1"))
@@ -879,37 +1040,39 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 							"lower_alarm_color", "" + ((float) (70 / divisor))).replace(",", "."));
 
 			} catch (Exception e) {
-				Log.e("error", "error",e);
+				log.error("error", e);
 			}
 
-			Log.i("processSGVValue", "UW " + upperwarning + " LW "
+			log.debug("UW " + upperwarning + " LW "
 					+ lowerwarning + " UA " + upperalarm + " LA " + loweralarm);
-
-			if (upperwarning > 0) {
-				color = Color.GREEN;
-				if (sgvInt >= upperwarning)
-					color = Constants.YELLOW;
-			}
-			if (upperalarm > 0) {
-				if (color == Color.WHITE)
+			if (alarms_active){
+				if (upperwarning > 0) {
 					color = Color.GREEN;
-				if (sgvInt >= upperalarm)
-					color = Color.RED;
+					if (sgvInt >= upperwarning)
+						color = Constants.YELLOW;
+				}
+				if (upperalarm > 0) {
+					if (color == Color.WHITE)
+						color = Color.GREEN;
+					if (sgvInt >= upperalarm)
+						color = Color.RED;
+				}
+				if (lowerwarning > 0) {
+					if (color == Color.WHITE)
+						color = Color.GREEN;
+					if (sgvInt <= lowerwarning)
+						color = Constants.YELLOW;
+				}
+				if (loweralarm > 0) {
+					if (color == Color.WHITE)
+						color = Color.GREEN;
+					if (sgvInt <= loweralarm)
+						color = Color.RED;
+				}
 			}
-			if (lowerwarning > 0) {
-				if (color == Color.WHITE)
-					color = Color.GREEN;
-				if (sgvInt <= lowerwarning)
-					color = Constants.YELLOW;
-			}
-			if (loweralarm > 0) {
-				if (color == Color.WHITE)
-					color = Color.GREEN;
-				if (sgvInt <= loweralarm)
-					color = Color.RED;
-			}
-			Log.i("processSGVValue", "Wraised " + warningRaised
+			log.debug( "Wraised " + warningRaised
 					+ " Alarmraside " + alarmRaised);
+			views.setInt(R.id.sgv_id, "setPaintFlags", 0);
 			views.setTextColor(R.id.sgv_id, color);
 			if (alarms_active) {
 				boolean alarm_enabled = prefs.getBoolean("alarmEnableActive", false);
@@ -937,7 +1100,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					editor.putBoolean("alarmRaised", true);
 					editor.commit();
 				}
-				Log.i("TESTMED", " current "+ current+" wlastRaised "+ wlastRaised+" warning_enabled "+warning_enabled+" substract "+(current - wlastRaised)+" warningDIff" +warningDiff);
+				log.debug(" current "+ current+" wlastRaised "+ wlastRaised+" warning_enabled "+warning_enabled+" substract "+(current - wlastRaised)+" warningDIff" +warningDiff);
 				if ((!alarmRaised || ((alarm_enabled) && (current - lastRaised) >= alarmDiff)) && (!warningRaised || ((warning_enabled) && (current - wlastRaised) >= warningDiff))&& color == Constants.YELLOW
 						&& (sound_warning ) && warning_ringtone != null
 						&& !warning_ringtone.equals("")) {
@@ -967,9 +1130,41 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			}
 
 		}
-		if (prefs.getString("metric_preference", "1").equals("2"))
+		Float diff = null;
+		log.debug( "calcSGV diff "+diff);
+		if (prefs.contains("previousSVGVALUE") && prefs.contains("previousSGVDATE"))
+		{
+			log.debug( "calcSGV diff prevvalue");
+			Float prevSvg = prefs.getFloat("previousSVGVALUE", -1f);
+			if (prefs.getLong("previousSGVDATE", 0) != date){
+				log.debug( "calcSGV diff prevvalue "+prevSvg);
+				SharedPreferences.Editor editor = prefs.edit();
+				if (prevSvg > 0){
+					 diff = (sgvInt - prevSvg);
+				    if (prefs.getString("metric_preference", "1").equals("2")){
+						editor.putString("currentDataDiff", df.format(diff)+" mmol/l");
+					}else{
+						if (diff > 0)
+							editor.putString("currentDataDiff","+"+ diff.intValue()+" mg/dl");
+						else if (diff< 0)
+							editor.putString("currentDataDiff",diff.intValue()+" mg/dl");
+					}
+				}else{
+					editor.remove("currentDataDiff");
+				}
+				editor.putFloat("previousSVGVALUE", sgvInt);
+				editor.putLong("previousSGVDATE", date);
+				editor.commit();
+			}
+		}else{
+			SharedPreferences.Editor editor = prefs.edit();
+			editor.putFloat("previousSVGVALUE", sgvInt);
+			editor.putLong("previousSGVDATE", date);
+			editor.commit();
+		}
+		if (prefs.getString("metric_preference", "1").equals("2")){
 			return df.format(sgvInt);
-		else
+		}else
 			return "" + (sgvInt.intValue());
 	}
 
@@ -983,7 +1178,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 *            , access to the Widget UI.
 	 */
 	private String processMBGValue(String mbg, RemoteViews views) {
-		Log.i("processMBGValue", "processMBGValue " + mbg +" METRICS "+prefs.getString("metric_preference", "1"));
+		log.debug( "processMBGValue " + mbg +" METRICS "+prefs.getString("metric_preference", "1"));
 		Float mbgInt = -1f;
 		float divisor = 1;
 		DecimalFormat df = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.US));
@@ -997,9 +1192,9 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				mbgInt = (float) mbgInt / divisor;
 
 		} catch (Exception e) {
-			Log.e("error", "error",e);
+			log.error( "error",e);
 		}
-		Log.i("processMBGValue", "processMBGValueINT " + mbgInt);
+		log.debug( "processMBGValueINT " + mbgInt);
 		if (mbgInt <= 0) {
 			views.setTextColor(R.id.mbg_label, Color.WHITE);
 			views.setTextColor(R.id.mbg_time_id, Color.WHITE);
@@ -1054,79 +1249,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		return "\u2194";
 	}
 
-	class ToggleRunnableAction implements Runnable {
-		ComponentName thisWidget = null;
-		RemoteViews views = null;
-		AppWidgetManager manager = null;
-		Context ctx = null;
-		String currentID = null;
-
-		public ToggleRunnableAction() {
-		}
-
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			Log.i("widget", "TOGGLE");
-			SharedPreferences settings = PreferenceManager
-					.getDefaultSharedPreferences(ctx);
-			String prevID = settings.getString("widget_prev_uuid","");
-			String actID = settings.getString("widget_uuid","");
-			long current = System.currentTimeMillis();
-			long diff = 0;
-			
-			if (currentID == null)
-				currentID = settings.getString("widget_uuid","");
-
-			if ( currentID == null || "".equals(currentID)){
-				mHandlerToggleInfo.removeCallbacks(this);
-				return;
-			}
-			
-			if (!settings.getBoolean("widgetEnabled", true) || prevID.equals(currentID) || !actID.equals(currentID)){
-				mHandlerToggleInfo.removeCallbacks(this);
-				return;
-				
-			}
-			
-			SharedPreferences.Editor editor = settings.edit();
-			if (settings.getLong("timeMBG", 0) != 0) {
-				diff = current - settings.getLong("timeMBG", 0);
-			} else {
-				editor.putLong("timeMBG", current);
-			}
-			if (settings.getBoolean("showSGV", true) && diff != current
-					&& diff >= 20000) {
-				editor.putBoolean("showSGV",
-						!settings.getBoolean("showSGV", true));
-				editor.putLong("timeMBG", current);
-				Log.i("widget", "TOGGLE1");
-				views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
-
-				views.setViewVisibility(R.id.linearLayout3, View.GONE);
-
-				if (isOnline())
-					manager.updateAppWidget(thisWidget, views);
-			} else if (!settings.getBoolean("showSGV", true) && diff != current
-					&& diff >= 20000) {
-				editor.putBoolean("showSGV",
-						!settings.getBoolean("showSGV", true));
-				editor.putLong("timeMBG", current);
-				Log.i("widget", "TOGGLE2");
-				views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);
-
-				views.setViewVisibility(R.id.linearLayout2, View.GONE);
-				if (isOnline())
-					manager.updateAppWidget(thisWidget, views);
-			}
-
-			editor.commit();
-			mHandlerToggleInfo.removeCallbacks(this);
-			mHandlerToggleInfo.postDelayed(this, 20000);
-		}
-
-	}
-
+	
 	public void setPrefs(SharedPreferences prefs) {
 		this.prefs = prefs;
 	}

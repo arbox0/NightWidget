@@ -41,7 +41,33 @@
         android:entryValues="@array/types_values"
         android:defaultValue="1"
         />
-        <SwitchPreference
+        <PreferenceScreen
+        android:key="data_2_show"
+        android:disableDependentsState="false"
+        android:title="@string/data_2_show"
+        android:persistent="false">
+        <CheckBoxPreference
+            android:key="show_insulin"
+        	android:disableDependentsState="false"
+        	android:title="@string/show_insulin"
+        	android:defaultValue="true"/>
+        <CheckBoxPreference
+            android:key="show_pump_battery"
+        	android:disableDependentsState="false"
+        	android:title="@string/show_pump_battery"
+        	android:defaultValue="true"/>
+        <CheckBoxPreference
+            android:key="show_mobile_battery"
+        	android:disableDependentsState="false"
+        	android:title="@string/show_mobile_battery"
+        	android:defaultValue="true"/>
+        <CheckBoxPreference
+            android:key="show_MBG"
+        	android:disableDependentsState="false"
+        	android:title="@string/show_MBG"
+        	android:defaultValue="true"/>
+        </PreferenceScreen>
+        <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Activate Alarms"
 	            android:key="alarms_active"
 	            android:disableDependentsState="false"
@@ -50,8 +76,8 @@
 	            android:switchTextOff="OFF"
 	            android:summaryOn="Activated. Widget alarms are active, a sound alert will be raised on customizable conditions"
 	            android:summaryOff="Deactivated. No alarms will be raised.">
-	    </SwitchPreference>
-	    <SwitchPreference
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
+	    <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Activate Alert Vibration"
 	            android:key="vibrationActive"
 	            android:dependency="alarms_active"
@@ -60,13 +86,13 @@
 	            android:switchTextOff="OFF"
 	            android:summaryOn="Activated. The phone will vibrate when an alarm/warning is raised."
 	            android:summaryOff="Deactivated. The phone will NOT vibrate when an alarm/warning is raised.">
-	    </SwitchPreference>
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
        <PreferenceScreen
         android:key="alert_thresholds"
         android:dependency="alarms_active"
         android:title="@string/alert_thresholds"
         android:persistent="false">
-        <SwitchPreference
+        <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Conn. lost alarm"
 	            android:key="alarm_lost"
 	            android:disableDependentsState="false"
@@ -75,7 +101,7 @@
 	            android:switchTextOff="OFF"
 	            android:summaryOn="A sound alert will be raised when no new data is received for a 'user configurable' time "
 	            android:summaryOff="No sound alert will be raised when no new data is received for a 'user configurable' time">
-	    </SwitchPreference>
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Alarm Sound"
 		    android:dependency="alarm_lost"
@@ -94,7 +120,7 @@
 	        android:entryValues="@array/refreshperiod_values"
 	        android:defaultValue="2"
 	        />
-	       <SwitchPreference
+	       <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Alarm on error values"
 	            android:key="alarm_error"
 	            android:disableDependentsState="false"
@@ -103,7 +129,7 @@
 	            android:switchTextOff="OFF"
 	            android:summaryOn="A sound alert will be raised when a strange/error value is received in sgv data"
 	            android:summaryOff="No sound alert will be raised when a strange/error value is received in sgv data">
-	    </SwitchPreference>
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Alarm Sound"
 		    android:dependency="alarm_error"
@@ -113,7 +139,7 @@
 		    android:showSilent="false"
 		    android:defaultValue="content://settings/system/notification_sound"
 		    />
-         <SwitchPreference
+         <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Sound Alarm"
 	            android:key="sound_alarm"
 	            android:disableDependentsState="false"
@@ -122,7 +148,7 @@
 	            android:switchTextOff="OFF"
 	            android:summaryOn="A sound alert will be raised when alarm thresholds are exceeded"
 	            android:summaryOff="No sound alert will be raised when alarm thresholds are exceeded">
-	    </SwitchPreference>
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Alarm Sound"
 		    android:dependency="sound_alarm"
@@ -132,7 +158,7 @@
 		    android:showSilent="false"
 		    android:defaultValue="content://settings/system/notification_sound"
 		    />
-	    <SwitchPreference
+	    <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Sound Warning"
 	            android:key="sound_warning"
 	            android:disableDependentsState="false"
@@ -141,7 +167,7 @@
 	            android:defaultValue="false"
 	            android:summaryOn="A sound alert will be raised when warning thresholds are exceeded"
 	            android:summaryOff="No sound alert will be raised when warning thresholds are exceeded">
-	    </SwitchPreference>
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Warning Sound"
 		     android:dependency="sound_warning"
@@ -177,7 +203,7 @@
         </PreferenceScreen>
     </PreferenceCategory>
     <PreferenceCategory android:title="Sharing">
-     <SwitchPreference
+     <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Show Widget Icon"
 	            android:key="showIcon"
 	            android:disableDependentsState="false"
@@ -186,7 +212,7 @@
 	            android:switchTextOff="NO"
 	            android:summaryOn="Activated. Widget Icon is visible"
 	            android:summaryOff="Deactivated. Widget Icon is not visible">
-	 </SwitchPreference>
+	 </com.nightscoutwidget.android.utils.CustomSwitchPreference>
     <EditTextPreference
             android:title="MongoDB URI"
             android:key="MongoDB URI"
@@ -214,7 +240,7 @@
     </EditTextPreference>
     </PreferenceCategory>
      <PreferenceCategory android:title="Disclaimer">
-	    <SwitchPreference
+	    <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="I UNDERSTAND"
 	            android:key="IUNDERSTAND"
 	            android:disableDependentsState="false"
@@ -222,6 +248,9 @@
 	            android:switchTextOff="NO"
 	            android:summaryOn="Activated. Nightwidget should not be used to make medical decisions. There is no support or any warranty of any kind. The quality and performance of the project is with you. This is a project that was created and is supported completely by volunteers"
 	            android:summaryOff="Deactivated. Nightwidget should not be used to make medical decisions. There is no support or any warranty of any kind. The quality and performance of the project is with you. This is a project that was created and is supported completely by volunteers">
-	    </SwitchPreference>
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
+	    <Preference 
+		 android:key="version"
+		 android:title="@string/version" />
     </PreferenceCategory>
 </PreferenceScreen>

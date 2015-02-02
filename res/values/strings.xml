@@ -32,7 +32,15 @@
     <string name="enable_alarm">Enable Alarm</string>
     <string name="alarm_after_label">After </string>
     <string name="alarm_minutes_label"> Min.</string>
-     <string  name="alarm_2hours_default">120</string>
+    <string  name="alarm_2hours_default">120</string>
+    <string  name="show_increment">Glucose difference</string>
+    <string  name="show_MBG">MBG info.</string>
+    <string  name="show_mobile_battery">Uploader Battery</string>
+    <string  name="show_pump_battery">Pump Battery</string>
+    <string  name="show_insulin">Insulin left</string>
+    <string  name="data_2_show">Data to show</string>
+    <string  name="widgetSettings">Settings</string>
+    <string  name="version">Version: 02.02.15_2</string>
     <style name="ButtonText">
     <item name="android:layout_width">fill_parent</item>
     <item name="android:layout_height">wrap_content</item>
@@ -74,6 +82,7 @@
      <item>20 min.</item>
      <item>30 min.</item>
      <item>60 min.</item>
+     <item>75 min.</item>
     </string-array>
     <string-array name="timeList">
      <item>10 min.</item>
