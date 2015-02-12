@@ -3,6 +3,8 @@ package com.nightscoutwidget.android.medtronic;
 import android.graphics.Color;
 
 public class Constants {
+	
+	
 
 	// CGM Types
 	public static final int DEXCOMG4 = 0;

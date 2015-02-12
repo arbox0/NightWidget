@@ -30,6 +30,7 @@
         <service  android:icon="@drawable/ic_launcher"
                 android:label="NightScout" android:name=".widget.CGMWidgetUpdater">
         </service>
+        <receiver android:name=".alerts.AlertActivity$NotButtonListener" />
 		<receiver android:name=".widget.CGMWidget" >
 		    <intent-filter>
 			    <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />

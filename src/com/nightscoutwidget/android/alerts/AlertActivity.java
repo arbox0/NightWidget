@@ -1,8 +1,16 @@
 package com.nightscoutwidget.android.alerts;
 
+import java.text.DecimalFormat;
+
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -17,6 +25,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 
@@ -34,25 +43,26 @@ public class AlertActivity extends Activity {
 	Vibrator vibrator = null;
 	int userVolume;
 	boolean vibrationActive = true;
-	
+	static AlertActivity alertActivity = null;
 	/**
 	 * Creates activity.
 	 */
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        alertActivity = this;
         prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         //Set the pattern for vibration   
         long pattern[]={1000,300};
         String label = "ALARM";
         String text = "Connection Lost!";
-        String ringTone = prefs.getString("alarmlost_ringtone", "");
-        String alarm_ringtone = prefs.getString("alarm_ringtone", "");
-        String alarmerror_ringtone = prefs.getString("alarmerror_ringtone", "");
-		String warning_ringtone = prefs.getString("warning_ringtone", "");
-		String sgv = prefs.getString("sgv", "");
-		vibrationActive = prefs.getBoolean("vibrationActive", true);
-		int type = prefs.getInt("alarmType", Constants.CONNECTION_LOST);
+        String ringTone = prefs.getString("alarmlost_ringtone_widget", "");
+        String alarm_ringtone = prefs.getString("alarm_ringtone_widget", "");
+        String alarmerror_ringtone = prefs.getString("alarmerror_ringtone_widget", "");
+		String warning_ringtone = prefs.getString("warning_ringtone_widget", "");
+		String sgv = prefs.getString("sgv_widget", "");
+		vibrationActive = prefs.getBoolean("vibrationActive_widget", true);
+		int type = prefs.getInt("alarmType_widget", Constants.CONNECTION_LOST);
 		Log.i("MEDTRONIC","EOOOOO FUERA");
 		if (vibrationActive){
 			Log.i("MEDTRONIC","EOOOOO DENTRO");
@@ -79,17 +89,17 @@ public class AlertActivity extends Activity {
         	ringTone = alarm_ringtone;
         	label = "ALARM";
         	text = "Limit exceeded\ncurrent value:"+sgv+"mg/dl";
-        	etvData.setText(""+(prefs.getLong("alarm_reenable", 120*60000)/60000));
+        	etvData.setText(""+(prefs.getLong("alarm_reenable_widget", 120*60000)/60000));
 		} else if (type == Constants.WARNING){
         	ringTone = warning_ringtone;
         	label = "WARNING";
         	text = "Limit exceeded\ncurrent value:"+sgv+"mg/dl";
-        	etvData.setText(""+(prefs.getLong("warning_reenable", 120*60000)/60000));
+        	etvData.setText(""+(prefs.getLong("warning_reenable_widget", 120*60000)/60000));
         }else if (type == Constants.ALARM_SGV_ERROR){
         	ringTone = alarmerror_ringtone;
         	label = "ALARM";
         	text = "Error value on SGV\nreceived value:"+sgv;
-        	etvData.setText(""+(prefs.getLong("alarm_sgv_reenable", 120*60000)/60000));
+        	etvData.setText(""+(prefs.getLong("alarm_sgv_reenable_widget", 120*60000)/60000));
         }
         TextView tvlabel = (TextView)findViewById(R.id.alarm_label);
         tvlabel.setText(label);
@@ -103,7 +113,7 @@ public class AlertActivity extends Activity {
         b1.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-            	int type = prefs.getInt("alarmType", Constants.CONNECTION_LOST);
+            	int type = prefs.getInt("alarmType_widget", Constants.CONNECTION_LOST);
             	SharedPreferences.Editor editor  = prefs.edit();
             	if (type != Constants.CONNECTION_LOST)
             	{
@@ -118,36 +128,35 @@ public class AlertActivity extends Activity {
 						}
 	            		
 	            		if (type == Constants.ALARM){
-	            			editor.putBoolean("alarmEnableActive", true);
+	            			editor.putBoolean("alarmEnableActive_widget", true);
 	            			if (waitValue < 0)
-	            				editor.remove("alarm_reenable");
+	            				editor.remove("alarm_reenable_widget");
 	            			else
-	            				editor.putLong("alarm_reenable", waitValue*60000);
+	            				editor.putLong("alarm_reenable_widget", waitValue*60000);
 	        			} else if (type == Constants.WARNING){
-	        				editor.putBoolean("warningEnableActive", true);
+	        				editor.putBoolean("warningEnableActive_widget", true);
 	        				if (waitValue < 0)
-	            				editor.remove("warning_reenable");
+	            				editor.remove("warning_reenable_widget");
 	            			else
-	            				editor.putLong("warning_reenable", waitValue*60000);
+	            				editor.putLong("warning_reenable_widget", waitValue*60000);
 	        	        }else if (type == Constants.ALARM_SGV_ERROR){
-	        	        	editor.putBoolean("alarmSgvEnableActive", true);
-	        	        	editor.remove("alarm_sgv_reenable");
+	        	        	editor.putBoolean("alarmSgvEnableActive_widget", true);
 	        	        	if (waitValue < 0)
-	            				editor.remove("alarm_sgv_reenable");
+	            				editor.remove("alarm_sgv_reenable_widget");
 	            			else
-	            				editor.putLong("alarm_sgv_reenable", waitValue*60000);
+	            				editor.putLong("alarm_sgv_reenable_widget", waitValue*60000);
 	        	        }
 	            	}else{
 	            		
 	            		if (type == Constants.ALARM){
-	            			editor.putBoolean("alarmEnableActive", false);
-	        	        	editor.remove("alarm_reenable");
+	            			editor.putBoolean("alarmEnableActive_widget", false);
+	        	        	editor.remove("alarm_reenable_widget");
 	        			} else if (type == Constants.WARNING){
-	        				editor.putBoolean("warningEnableActive", false);
-	        				editor.remove("warning_reenable");
+	        				editor.putBoolean("warningEnableActive_widget", false);
+	        				editor.remove("warning_reenable_widget");
 	        	        }else if (type == Constants.ALARM_SGV_ERROR){
-	        	        	editor.putBoolean("alarmSgvEnableActive", false);
-	        	        	editor.remove("alarm_sgv_reenable");
+	        	        	editor.putBoolean("alarmSgvEnableActive_widget", false);
+	        	        	editor.remove("alarm_sgv_reenable_widget");
 	        	        }		
 	            	}
             	}
@@ -162,6 +171,43 @@ public class AlertActivity extends Activity {
             	finish();
             }
         });
+        	String notText = "";
+			Notification.Builder mBuilder = null;
+			if (type != Constants.CONNECTION_LOST){
+				notText = label+" sgv: "+sgv;
+			        mBuilder = new Notification.Builder(getBaseContext())
+			        .setSmallIcon(R.drawable.ic_launcher_little_w32)
+			        .setContentTitle(label+": "+sgv)
+			        .setContentText(sgv)
+			        .setTicker("SGV: "+sgv)
+			        .setLargeIcon((((BitmapDrawable)getBaseContext().getResources().getDrawable(R.drawable.ic_launcher)).getBitmap()));
+			}else{
+				notText = label+": conn. lost";
+			    mBuilder = new Notification.Builder(getBaseContext())
+		        .setSmallIcon(R.drawable.ic_launcher_little_w32)
+		        .setContentTitle(label+": conn. lost")
+		        .setContentText(sgv)
+		        .setTicker("SGV: conn. lost")
+		        .setLargeIcon((((BitmapDrawable)getBaseContext().getResources().getDrawable(R.drawable.ic_launcher)).getBitmap()));
+			}
+			 RemoteViews contentView=new RemoteViews(getBaseContext().getPackageName(), R.layout.not_layout);
+		     mBuilder.setContent(contentView);
+			NotificationManager mNotificationManager =
+			    (NotificationManager) getBaseContext().getSystemService(Context.NOTIFICATION_SERVICE);
+			// mId allows you to update the notification later on.
+			  //this is the intent that is supposed to be called when the 
+		    //button is clicked
+		    Intent notButtonIntent = new Intent(this, NotButtonListener.class);
+		    PendingIntent pendingSwitchIntent = PendingIntent.getBroadcast(this, 0, 
+		    		notButtonIntent, 0);
+
+		    contentView.setTextViewText(R.id.notText, notText);
+			contentView.setOnClickPendingIntent(R.id.notCloseButton, pendingSwitchIntent);
+			SharedPreferences settings = getBaseContext().getSharedPreferences("widget_prefs", 0);
+			String mTag = settings.getString("widgetTag", "nightWidget_030215");
+			int mId =  settings.getInt("widgetId", 1717030215);
+			mNotificationManager.notify(mTag, mId, mBuilder.build());
+	
         if (type == Constants.CONNECTION_LOST){
         	cbEnable.setChecked(false);
         	cbEnable.setVisibility(View.GONE);
@@ -239,52 +285,53 @@ public class AlertActivity extends Activity {
     public void onDestroy(){
          final EditText etvData =  (EditText)findViewById(R.id.time_text);
          final CheckBox cbEnable = (CheckBox)findViewById(R.id.enableAlarm);
-         int type = prefs.getInt("alarmType", Constants.CONNECTION_LOST);
+         int type = prefs.getInt("alarmType_widget", Constants.CONNECTION_LOST);
      	SharedPreferences.Editor editor  = prefs.edit();
-     	if (cbEnable.isChecked()){
-     		int waitValue = -1;
-     		try {
-					waitValue = Integer.parseInt(etvData.getText().toString());
-				} catch (Exception e) {
-					// TODO: handle exception
-					Log.e("MED", "error parsing time", e);
-					waitValue = -1;
-				}
-     		
-     		if (type == Constants.ALARM){
-     			editor.putBoolean("alarmEnableActive", true);
-     			if (waitValue < 0)
-     				editor.remove("alarm_reenable");
-     			else
-     				editor.putLong("alarm_reenable", waitValue*60000);
- 			} else if (type == Constants.WARNING){
- 				editor.putBoolean("warningEnableActive", true);
- 				if (waitValue < 0)
-     				editor.remove("warning_reenable");
-     			else
-     				editor.putLong("warning_reenable", waitValue*60000);
- 	        }else if (type == Constants.ALARM_SGV_ERROR){
- 	        	editor.putBoolean("alarmSgvEnableActive", true);
- 	        	editor.remove("alarm_sgv_reenable");
- 	        	if (waitValue < 0)
-     				editor.remove("alarm_sgv_reenable");
-     			else
-     				editor.putLong("alarm_sgv_reenable", waitValue*60000);
- 	        }
-     	}else{
-     		
-     		if (type == Constants.ALARM){
-     			editor.putBoolean("alarmEnableActive", false);
- 	        	editor.remove("alarm_reenable");
- 			} else if (type == Constants.WARNING){
- 				editor.putBoolean("warningEnableActive", false);
- 				editor.remove("warning_reenable");
- 	        }else if (type == Constants.ALARM_SGV_ERROR){
- 	        	editor.putBoolean("alarmSgvEnableActive", false);
- 	        	editor.remove("alarm_sgv_reenable");
- 	        }
-     		
-     		
+     	if (type != Constants.CONNECTION_LOST){
+	     	if (cbEnable.isChecked()){
+	     		int waitValue = -1;
+	     		try {
+						waitValue = Integer.parseInt(etvData.getText().toString());
+					} catch (Exception e) {
+						// TODO: handle exception
+						Log.e("MED", "error parsing time", e);
+						waitValue = -1;
+					}
+	     		
+	     		if (type == Constants.ALARM){
+	     			editor.putBoolean("alarmEnableActive_widget", true);
+	     			if (waitValue < 0)
+	     				editor.remove("alarm_reenable_widget");
+	     			else
+	     				editor.putLong("alarm_reenable_widget", waitValue*60000);
+	 			} else if (type == Constants.WARNING){
+	 				editor.putBoolean("warningEnableActive_widget", true);
+	 				if (waitValue < 0)
+	     				editor.remove("warning_reenable_widget");
+	     			else
+	     				editor.putLong("warning_reenable_widget", waitValue*60000);
+	 	        }else if (type == Constants.ALARM_SGV_ERROR){
+	 	        	editor.putBoolean("alarmSgvEnableActive_widget", true);
+	 	        	if (waitValue < 0)
+	     				editor.remove("alarm_sgv_reenable_widget");
+	     			else
+	     				editor.putLong("alarm_sgv_reenable_widget", waitValue*60000);
+	 	        }
+	     	}else{
+	     		
+	     		if (type == Constants.ALARM){
+	     			editor.putBoolean("alarmEnableActive_widget", false);
+	 	        	editor.remove("alarm_reenable_widget");
+	 			} else if (type == Constants.WARNING){
+	 				editor.putBoolean("warningEnableActive_widget", false);
+	 				editor.remove("warning_reenable_widget");
+	 	        }else if (type == Constants.ALARM_SGV_ERROR){
+	 	        	editor.putBoolean("alarmSgvEnableActive_widget", false);
+	 	        	editor.remove("alarm_sgv_reenable_widget");
+	 	        }
+	     		
+	     		
+	     	}
      	}
      	editor.commit();
     	if (mMediaPlayer != null){
@@ -295,5 +342,23 @@ public class AlertActivity extends Activity {
     	}
     	super.onDestroy();
     }
+    
+
+
+
+public static class NotButtonListener extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Log.d("Here", "I am here");
+        AlertActivity.alertActivity.finish();
+        SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+    	String mTag = settings.getString("widgetTag", "nightWidget_030215");
+		int mId =  settings.getInt("widgetId", 1717030215);
+        NotificationManager notificationManager = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(mTag, mId);
+        
+            
+    }
+}
 }
 

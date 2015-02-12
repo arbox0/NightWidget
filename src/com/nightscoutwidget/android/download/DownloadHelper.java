@@ -11,6 +11,8 @@ import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 
 import android.app.KeyguardManager;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
@@ -19,6 +21,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -103,8 +106,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 */
 	private JSONObject doMongoDownload() {
 		log.info("doMongoDownload");
-		String dbURI = prefs.getString("MongoDB URI", null);
-		String collectionName = prefs.getString("Collection Name", "entries");
+		String dbURI = prefs.getString("MongoDB URI_widget", null);
+		String collectionName = prefs.getString("Collection Name_widget", "entries");
 		String dsCollectionName = prefs.getString(
 				"DeviceStatus Collection Name", "devicestatus");
 		// String gdCollectionName = prefs.getString("gcdCollectionName", null);
@@ -198,7 +201,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						&& cgmSelected == Constants.MEDTRONIC_CGM) {
 					DBCursor deviceCursor = deviceData
 							.find(new BasicDBObject("deviceId", prefs
-									.getString("medtronic_cgm_id", "")));
+									.getString("medtronic_cgm_id_widget", "")));
 					if (deviceCursor.hasNext()) {
 						medtronicDevice = deviceCursor.next();
 						if (medtronicDevice.containsField("insulinLeft")) {
@@ -347,26 +350,25 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			KeyguardManager myKM = (KeyguardManager) mToggleRunnableAction.ctx
 					.getSystemService(Context.KEYGUARD_SERVICE);
 			if (myKM.inKeyguardRestrictedInputMode()) {
-				if (prefs.getBoolean("showIcon", true)){
+				if (prefs.getBoolean("showIcon_widget", true)){
 	    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
 	    		}else{
 	    			views.setViewVisibility(R.id.imageButton1, View.GONE);
 	    		}
 
 			} else {
-				String webUri = null;
-				if (prefs.contains("web_uri"))
-					webUri = prefs.getString("web_uri",
-							"http://www.nightscout.info/wiki/welcome");
-				if (webUri != null && webUri.length() > 0
-						&& webUri.indexOf("http://") >= 0) {
-					Intent intent = new Intent(Intent.ACTION_VIEW,
-							Uri.parse(webUri));
-					PendingIntent pendingIntent = PendingIntent.getActivity(
-							 mToggleRunnableAction.ctx, 7, intent, 0);
-					views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
-				}
-				if (prefs.getBoolean("showIcon", true)){
+			 String webUri = null;
+		 		if (prefs.getString("web_uri_widget","").trim().equalsIgnoreCase(""))
+		 			webUri = "http://www.nightscout.info/wiki/welcome";
+		 		else
+		 			webUri = prefs.getString("web_uri_widget","");
+		 			
+		 		if (webUri != null && webUri.length() > 0 && webUri.indexOf("http://")>=0){
+			    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
+				        PendingIntent pendingIntent = PendingIntent.getActivity(context, 7, intent, 0);
+				        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
+		 		}
+				if (prefs.getBoolean("showIcon_widget", true)){
 	    			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
 	    		}else{
 	    			views.setViewVisibility(R.id.imageButton1, View.GONE);
@@ -481,10 +483,10 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		String direction = "";
 		int calibrationStatus = -1;
 		boolean isCalibrating = false;
-		boolean showMBG = prefs.getBoolean("show_MBG", true);
-		boolean showInsulin = prefs.getBoolean("show_insulin", true);
-		boolean showUploaderBattery = prefs.getBoolean("show_mobile_battery", true);
-		boolean showPumpBattery = prefs.getBoolean("show_pump_battery", true);
+		boolean showMBG = prefs.getBoolean("show_MBG_widget", true);
+		boolean showInsulin = prefs.getBoolean("show_insulin_widget", true);
+		boolean showUploaderBattery = prefs.getBoolean("show_mobile_battery_widget", true);
+		boolean showPumpBattery = prefs.getBoolean("show_pump_battery_widget", true);
 		boolean showDataDifference = true;
 		try {
 			updated.put("showMBG", showMBG);
@@ -495,7 +497,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		
 		String calib = "---";
 		String batteryStatus = "Normal";
-		String itemSelected = prefs.getString("reservoir_ins_units", "2");
+		String itemSelected = prefs.getString("reservoir_ins_units_widget", "2");
 		int max_ins_units = 300;
 
 		JSONObject result = null;
@@ -793,7 +795,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 		long current = System.currentTimeMillis();
 		long diff = current - date;
-		String type = prefs.getString("minrefreshPeriod", "2");
+		String type = prefs.getString("minrefreshPeriod_widget", "2");
 		long maxTime = Constants.TIME_15_MIN_IN_MS;
 		if ("1".equalsIgnoreCase(type)) {
 			maxTime = Constants.TIME_10_MIN_IN_MS;
@@ -818,11 +820,11 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		} else
 			maxTime = Constants.TIME_15_MIN_IN_MS;
 		boolean lostTimeAlarmRaised = false;
-		boolean alarms_active = prefs.getBoolean("alarms_active", true);
-		boolean raiseLostAlarm = prefs.getBoolean("alarm_lost", true);
+		boolean alarms_active = prefs.getBoolean("alarms_active_widget", true);
+		boolean raiseLostAlarm = prefs.getBoolean("alarm_lost_widget", true);
 		if (alarms_active) {
-			if (prefs.contains("lostTimeAlarmRaised"))
-				lostTimeAlarmRaised = prefs.getBoolean("lostTimeAlarmRaised",
+			if (prefs.contains("lostTimeAlarmRaised_widget"))
+				lostTimeAlarmRaised = prefs.getBoolean("lostTimeAlarmRaised_widget",
 						false);
 			if (diff != current && diff >= maxTime) {
 				views.setTextColor(R.id.sgv_id, Color.GRAY);
@@ -830,8 +832,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
 				if (!lostTimeAlarmRaised && raiseLostAlarm) {
 					SharedPreferences.Editor editor = prefs.edit();
-					editor.putInt("alarmType", Constants.CONNECTION_LOST);
-					editor.putBoolean("lostTimeAlarmRaised", true);
+					editor.putInt("alarmType_widget", Constants.CONNECTION_LOST);
+					editor.putBoolean("lostTimeAlarmRaised_widget", true);
 					editor.commit();
 					// intent to call the activity which shows on ringing
 					Intent intent = new Intent(context.getApplicationContext(),
@@ -843,8 +845,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 				} else if (!raiseLostAlarm) {
 					SharedPreferences.Editor editor = prefs.edit();
-					editor.putInt("alarmType", Constants.CONNECTION_LOST);
-					editor.putBoolean("lostTimeAlarmRaised", true);
+					editor.putInt("alarmType_widget", Constants.CONNECTION_LOST);
+					editor.putBoolean("lostTimeAlarmRaised_widget", true);
 					editor.commit();
 				}
 			} else {
@@ -854,7 +856,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 												// Paint.STRIKE_THRU_TEXT_FLAG));
 				if (diff < Constants.TIME_10_MIN_IN_MS) {
 					SharedPreferences.Editor editor = prefs.edit();
-					editor.remove("lostTimeAlarmRaised");
+					editor.remove("lostTimeAlarmRaised_widget");
 					editor.commit();
 				}
 			}
@@ -892,7 +894,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			updated.put("showUploaderBattery", showUploaderBattery);
 			updated.put("showPumpBattery", showPumpBattery);
 			if (showDataDifference){
-				String diffData = prefs.getString("currentDataDiff","");
+				String diffData = prefs.getString("currentDataDiff_widget","");
 				log.info("SHOWDATA2 "+diffData);
 				if (diffData != null && !diffData.equalsIgnoreCase("")){
 					log.info("SHOWDATA3 "+diffData);
@@ -919,36 +921,66 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	private String processSGVValue(String sgv, long date, RemoteViews views) {
 		log.info("processSGVValue " + sgv);
 		Float sgvInt = -1f;
-		boolean alarms_active = prefs.getBoolean("alarms_active", true);
+		boolean alarms_active = prefs.getBoolean("alarms_active_widget", true);
 		float divisor = 1;
-		DecimalFormat df = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.US));
-		if (prefs.getString("metric_preference", "1").equals("2"))
+		DecimalFormat df = null;
+		if (prefs.getBoolean("mmolDecimals_widget", false))
+			df = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.US));
+		else
+			df = new DecimalFormat("#.#", new DecimalFormatSymbols(Locale.US));
+		if (prefs.getString("metric_preference_widget", "1").equals("2"))
 			divisor = 18;
 		try {
 			if (alarms_active) {
 				if (!Constants.checkSgvErrorValue(sgv)) {
 					sgvInt = (float) Integer.parseInt(sgv);
-					if (prefs.getString("metric_preference", "1").equals("2"))
+					if (prefs.getString("metric_preference_widget", "1").equals("2"))
 						sgvInt = sgvInt / divisor;
 				} else {
+					StringBuffer notDigits = new StringBuffer();
+					try {
+						StringBuffer aux = new StringBuffer();
+						
+						for (int i = 0; i < sgv.length(); i++){
+							if (Character.isDigit(sgv.charAt(i))){
+								aux.append(sgv.charAt(i));
+							}else
+								notDigits.append(sgv.charAt(i));
+						}
+						sgvInt = (float) Integer.parseInt(aux.toString());
+						if (prefs.getString("metric_preference_widget", "1").equals("2"))
+							sgvInt = sgvInt / divisor;
+					} catch (Exception e) {
+						// TODO: handle exception
+					}
 					boolean alarm_error = prefs
 							.getBoolean("alarm_error", false);
 					boolean errorsgv_raised = prefs.getBoolean(
-							"error_sgvraised", false);
-					boolean alarm_sgv_enabled = prefs.getBoolean("alarmSgvEnableActive", false);
-					long alarmDiff =  prefs.getLong("alarm_sgv_reenable", 0);
-					long lastRaised = prefs.getLong("alarm_sgv_time", 0);
+							"error_sgvraised_widget", false);
+					boolean alarm_sgv_enabled = prefs.getBoolean("alarmSgvEnableActive_widget", false);
+					long alarmDiff =  prefs.getLong("alarm_sgv_reenable_widget", 0);
+					long lastRaised = prefs.getLong("alarm_sgv_time_widget", 0);
 					long current = System.currentTimeMillis();
 					String alarmerror_ringtone = prefs.getString(
-							"alarmerror_ringtone", "");
+							"alarmerror_ringtone_widget", "");
 					if (alarm_error && ((!errorsgv_raised) || ((alarm_sgv_enabled) && ((current - lastRaised) >= alarmDiff)))
 							&& alarmerror_ringtone != null
 							&& !alarmerror_ringtone.equals("")) {
 						SharedPreferences.Editor editor = prefs.edit();
-						editor.putBoolean("error_sgvraised", true);
-						editor.putInt("alarmType", Constants.ALARM_SGV_ERROR);
-						editor.putString("sgv", sgv);
-						editor.putLong("alarm_sgv_time", System.currentTimeMillis());
+						editor.putBoolean("error_sgvraised_widget", true);
+						editor.putInt("alarmType_widget", Constants.ALARM_SGV_ERROR);
+					    String metric_type = prefs.getString("metric_preference_widget", "1");
+				    	if (prefs.getBoolean("mmolDecimals_widget", false))
+				    		df = new DecimalFormat("#.##");
+				    	else
+				    		df = new DecimalFormat("#.#");
+				    	if (metric_type.equals("2")){
+				    		if (sgvInt > -1){
+				    			editor.putString("sgv_widget", df.format(sgvInt)+notDigits.toString());
+				    		}
+				    	}else
+				    		editor.putString("sgv_widget", sgv);
+						editor.putLong("alarm_sgv_time_widget", System.currentTimeMillis());
 						editor.commit();
 						Intent intent = new Intent(
 								context.getApplicationContext(),
@@ -957,14 +989,14 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						context.getApplicationContext().startActivity(intent);
 					} else if (!alarm_error) {
 						SharedPreferences.Editor editor = prefs.edit();
-						editor.putBoolean("error_sgvraised", true);
+						editor.putBoolean("error_sgvraised_widget", true);
 						editor.commit();
 					}
 				}
 			}else{
 				if (!Constants.checkSgvErrorValue(sgv)) {
 					sgvInt = (float) Integer.parseInt(sgv);
-					if (prefs.getString("metric_preference", "1").equals("2"))
+					if (prefs.getString("metric_preference_widget", "1").equals("2"))
 						sgvInt = sgvInt / divisor;
 				}
 			}
@@ -977,18 +1009,18 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			views.setInt(R.id.sgv_id, "setPaintFlags", 0);
 			views.setTextColor(R.id.sgv_id, Color.WHITE);
 			SharedPreferences.Editor editor = prefs.edit();
-			editor.remove("previousSVGVALUE");
-			editor.remove("currentDataDiff");
+			editor.remove("previousSVGVALUE_widget");
+			editor.remove("currentDataDiff_widget");
 			editor.commit();
 			return sgv;
 		} else {
 			log.info("processSGVValueInside " + sgvInt);
-			boolean sound_alarm = prefs.getBoolean("sound_alarm", true);
-			boolean sound_warning = prefs.getBoolean("sound_warning", false);
-			boolean alarmRaised = prefs.getBoolean("alarmRaised", false);
-			boolean warningRaised = prefs.getBoolean("warningRaised", false);
-			String alarm_ringtone = prefs.getString("alarm_ringtone", "");
-			String warning_ringtone = prefs.getString("warning_ringtone", "");
+			boolean sound_alarm = prefs.getBoolean("sound_alarm_widget", true);
+			boolean sound_warning = prefs.getBoolean("sound_warning_widget", false);
+			boolean alarmRaised = prefs.getBoolean("alarmRaised_widget", false);
+			boolean warningRaised = prefs.getBoolean("warningRaised_widget", false);
+			String alarm_ringtone = prefs.getString("alarm_ringtone_widget", "");
+			String warning_ringtone = prefs.getString("warning_ringtone_widget", "");
 			float upperwarning = 0;
 			float lowerwarning = 0;
 			float upperalarm = 0;
@@ -996,48 +1028,48 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			int color = Color.WHITE;
 
 			try {
-				if (prefs.getString("metric_preference", "1").equals("1"))
+				if (prefs.getString("metric_preference_widget", "1").equals("1"))
 					upperwarning = Integer.parseInt(prefs
-							.getString("upper_warning_color", ""
+							.getString("upper_warning_color_widget", ""
 									+ ((int) (140 / divisor))));
 				else
 					upperwarning = Float.parseFloat(prefs
-							.getString("upper_warning_color", ""
+							.getString("upper_warning_color_widget", ""
 									+ ((float) (140 / divisor))).replace(",", "."));
 			} catch (Exception e) {
 				log.error("error", e);
 			}
 			try {
-				if (prefs.getString("metric_preference", "1").equals("1"))
+				if (prefs.getString("metric_preference_widget", "1").equals("1"))
 					lowerwarning = Integer
-							.parseInt(prefs.getString("lower_warning_color", ""
+							.parseInt(prefs.getString("lower_warning_color_widget", ""
 									+ ((int) (80 / divisor))));
 				else
 					lowerwarning = Float
-							.parseFloat(prefs.getString("lower_warning_color",
+							.parseFloat(prefs.getString("lower_warning_color_widget",
 									"" + ((float) (80 / divisor))).replace(",", "."));
 
 			} catch (Exception e) {
 				log.error("error", e);
 			}
 			try {
-				if (prefs.getString("metric_preference", "1").equals("1"))
+				if (prefs.getString("metric_preference_widget", "1").equals("1"))
 					upperalarm = Integer.parseInt(prefs.getString(
-							"upper_alarm_color", "" + ((int) (170 / divisor))));
+							"upper_alarm_color_widget", "" + ((int) (170 / divisor))));
 				else
 					upperalarm = Float.parseFloat(prefs.getString(
-							"upper_alarm_color", "" + ((float) (170 / divisor))).replace(",", "."));
+							"upper_alarm_color_widget", "" + ((float) (170 / divisor))).replace(",", "."));
 
 			} catch (Exception e) {
 				log.error("error", e);
 			}
 			try {
-				if (prefs.getString("metric_preference", "1").equals("1"))
+				if (prefs.getString("metric_preference_widget", "1").equals("1"))
 					loweralarm = Integer.parseInt(prefs.getString(
-							"lower_alarm_color", "" + ((int) (70 / divisor))));
+							"lower_alarm_color_widget", "" + ((int) (70 / divisor))));
 				else
 					loweralarm = Float.parseFloat(prefs.getString(
-							"lower_alarm_color", "" + ((float) (70 / divisor))).replace(",", "."));
+							"lower_alarm_color_widget", "" + ((float) (70 / divisor))).replace(",", "."));
 
 			} catch (Exception e) {
 				log.error("error", e);
@@ -1075,21 +1107,31 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			views.setInt(R.id.sgv_id, "setPaintFlags", 0);
 			views.setTextColor(R.id.sgv_id, color);
 			if (alarms_active) {
-				boolean alarm_enabled = prefs.getBoolean("alarmEnableActive", false);
-				boolean warning_enabled = prefs.getBoolean("warningEnableActive", false);
-				long alarmDiff =  prefs.getLong("alarm_reenable", 0);
-				long lastRaised = prefs.getLong("alarm_time", 0);
-				long warningDiff =  prefs.getLong("warning_reenable", 0);
-				long wlastRaised = prefs.getLong("warning_time", 0);
+				boolean alarm_enabled = prefs.getBoolean("alarmEnableActive_widget", false);
+				boolean warning_enabled = prefs.getBoolean("warningEnableActive_widget", false);
+				long alarmDiff =  prefs.getLong("alarm_reenable_widget", 0);
+				long lastRaised = prefs.getLong("alarm_time_widget", 0);
+				long warningDiff =  prefs.getLong("warning_reenable_widget", 0);
+				long wlastRaised = prefs.getLong("warning_time_widget", 0);
 				long current = System.currentTimeMillis();
 				if ((!alarmRaised || ((alarm_enabled) && (current - lastRaised) >= alarmDiff)) && color == Color.RED && (sound_alarm )
 						&& alarm_ringtone != null && !alarm_ringtone.equals("")) {
 
 					SharedPreferences.Editor editor = prefs.edit();
-					editor.putBoolean("alarmRaised", true);
-					editor.putInt("alarmType", Constants.ALARM);
-					editor.putString("sgv", "" + sgvInt);
-					editor.putLong("alarm_time", current);
+					editor.putBoolean("alarmRaised_widget", true);
+					editor.putInt("alarmType_widget", Constants.ALARM);
+					String metric_type = prefs.getString("metric_preference_widget", "1");
+			    	if (prefs.getBoolean("mmolDecimals_widget", false))
+			    		df = new DecimalFormat("#.##");
+			    	else
+			    		df = new DecimalFormat("#.#");
+			    	if (metric_type.equals("2")){
+			    		if (sgvInt > -1){
+			    			editor.putString("sgv_widget", df.format(sgvInt));
+			    		}
+			    	}else
+			    		editor.putString("sgv_widget", "" + sgvInt);
+					editor.putLong("alarm_time_widget", current);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
@@ -1097,7 +1139,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					context.getApplicationContext().startActivity(intent);
 				} else if (!sound_alarm) {
 					SharedPreferences.Editor editor = prefs.edit();
-					editor.putBoolean("alarmRaised", true);
+					editor.putBoolean("alarmRaised_widget", true);
 					editor.commit();
 				}
 				log.debug(" current "+ current+" wlastRaised "+ wlastRaised+" warning_enabled "+warning_enabled+" substract "+(current - wlastRaised)+" warningDIff" +warningDiff);
@@ -1105,10 +1147,20 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						&& (sound_warning ) && warning_ringtone != null
 						&& !warning_ringtone.equals("")) {
 					SharedPreferences.Editor editor = prefs.edit();
-					editor.putInt("alarmType", Constants.WARNING);
-					editor.putBoolean("warningRaised", true);
-					editor.putString("sgv", "" + sgvInt);
-					editor.putLong("warning_time", current);
+					editor.putInt("alarmType_widget", Constants.WARNING);
+					editor.putBoolean("warningRaised_widget", true);
+					String metric_type = prefs.getString("metric_preference_widget", "1");
+			    	if (prefs.getBoolean("mmolDecimals_widget", false))
+			    		df = new DecimalFormat("#.##");
+			    	else
+			    		df = new DecimalFormat("#.#");
+			    	if (metric_type.equals("2")){
+			    		if (sgvInt > -1){
+			    			editor.putString("sgv_widget", df.format(sgvInt));
+			    		}
+			    	}else
+			    		editor.putString("sgv_widget", "" + sgvInt);
+					editor.putLong("warning_time_widget", current);
 					editor.commit();
 					Intent intent = new Intent(context.getApplicationContext(),
 							AlertActivity.class);
@@ -1117,52 +1169,76 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 				} else if (!sound_warning) {
 					SharedPreferences.Editor editor = prefs.edit();
-					editor.putBoolean("warningRaised", true);
+					editor.putBoolean("warningRaised_widget", true);
 					editor.commit();
 				}
 			}
 
 			if (color == Color.GREEN || color == Color.WHITE) {
 				SharedPreferences.Editor editor = prefs.edit();
-				editor.remove("alarmRaised");
-				editor.remove("warningRaised");
+				editor.remove("alarmRaised_widget");
+				editor.remove("warningRaised_widget");
 				editor.commit();
 			}
 
 		}
 		Float diff = null;
 		log.debug( "calcSGV diff "+diff);
-		if (prefs.contains("previousSVGVALUE") && prefs.contains("previousSGVDATE"))
+		if (prefs.contains("previousSVGVALUE_widget") && prefs.contains("previousSGVDATE_widget"))
 		{
 			log.debug( "calcSGV diff prevvalue");
-			Float prevSvg = prefs.getFloat("previousSVGVALUE", -1f);
-			if (prefs.getLong("previousSGVDATE", 0) != date){
+			Float prevSvg = prefs.getFloat("previousSVGVALUE_widget", -1f);
+			if (prefs.getLong("previousSGVDATE_widget", 0) != date){
+				String newValue = "";
+				if (prefs.getString("metric_preference_widget", "1").equals("2")){
+					newValue = df.format(sgvInt);
+				}else
+					newValue = ""+ (sgvInt.intValue());
+				if (prefs.getBoolean("show_Notifications_widget", true))
+				{
+					Notification.Builder mBuilder =
+					        new Notification.Builder(context)
+					        .setSmallIcon(R.drawable.ic_launcher_little)
+					        .setContentTitle("New SGV received:")
+					        .setContentText(newValue)
+					        .setTicker("SGV received: "+newValue)
+					        .setLargeIcon((((BitmapDrawable)context.getResources().getDrawable(R.drawable.ic_launcher)).getBitmap()));
+					
+					NotificationManager mNotificationManager =
+					    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+					// mId allows you to update the notification later on.
+					SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+					String mTag = settings.getString("widgetTag", "nightWidget_030215");
+					int mId =  settings.getInt("widgetId", 1717030215);
+					mNotificationManager.notify(mTag, mId, mBuilder.build());
+				}				
+				
 				log.debug( "calcSGV diff prevvalue "+prevSvg);
 				SharedPreferences.Editor editor = prefs.edit();
 				if (prevSvg > 0){
 					 diff = (sgvInt - prevSvg);
-				    if (prefs.getString("metric_preference", "1").equals("2")){
-						editor.putString("currentDataDiff", df.format(diff)+" mmol/l");
+				    if (prefs.getString("metric_preference_widget", "1").equals("2")){
+						editor.putString("currentDataDiff_widget", df.format(diff)+" mmol/l");
 					}else{
 						if (diff > 0)
-							editor.putString("currentDataDiff","+"+ diff.intValue()+" mg/dl");
+							editor.putString("currentDataDiff_widget","+"+ diff.intValue()+" mg/dl");
 						else if (diff< 0)
-							editor.putString("currentDataDiff",diff.intValue()+" mg/dl");
+							editor.putString("currentDataDiff_widget",diff.intValue()+" mg/dl");
 					}
 				}else{
-					editor.remove("currentDataDiff");
+					editor.remove("currentDataDiff_widget");
 				}
-				editor.putFloat("previousSVGVALUE", sgvInt);
-				editor.putLong("previousSGVDATE", date);
+				editor.putFloat("previousSVGVALUE_widget", sgvInt);
+				editor.putLong("previousSGVDATE_widget", date);
 				editor.commit();
 			}
 		}else{
 			SharedPreferences.Editor editor = prefs.edit();
-			editor.putFloat("previousSVGVALUE", sgvInt);
-			editor.putLong("previousSGVDATE", date);
+			editor.putFloat("previousSVGVALUE_widget", sgvInt);
+			editor.putLong("previousSGVDATE_widget", date);
 			editor.commit();
 		}
-		if (prefs.getString("metric_preference", "1").equals("2")){
+		if (prefs.getString("metric_preference_widget", "1").equals("2")){
 			return df.format(sgvInt);
 		}else
 			return "" + (sgvInt.intValue());
@@ -1178,17 +1254,17 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 *            , access to the Widget UI.
 	 */
 	private String processMBGValue(String mbg, RemoteViews views) {
-		log.debug( "processMBGValue " + mbg +" METRICS "+prefs.getString("metric_preference", "1"));
+		log.debug( "processMBGValue " + mbg +" METRICS "+prefs.getString("metric_preference_widget", "1"));
 		Float mbgInt = -1f;
 		float divisor = 1;
 		DecimalFormat df = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.US));
-		if (prefs.getString("metric_preference", "1").equals("2")){
+		if (prefs.getString("metric_preference_widget", "1").equals("2")){
 			divisor = 18;
 		}
 		try {
 
 			mbgInt =  Float.parseFloat(mbg);
-			if (prefs.getString("metric_preference", "1").equals("2"))
+			if (prefs.getString("metric_preference_widget", "1").equals("2"))
 				mbgInt = (float) mbgInt / divisor;
 
 		} catch (Exception e) {
@@ -1205,7 +1281,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			views.setTextColor(R.id.mbg_time_id, Color.WHITE);
 			views.setTextColor(R.id.mbg_value, Color.WHITE);
 		}
-		if (prefs.getString("metric_preference", "1").equals("2"))
+		if (prefs.getString("metric_preference_widget", "1").equals("2"))
 			return df.format(mbgInt);
 		else
 			return "" + (mbgInt.intValue());

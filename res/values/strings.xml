@@ -38,9 +38,10 @@
     <string  name="show_mobile_battery">Uploader Battery</string>
     <string  name="show_pump_battery">Pump Battery</string>
     <string  name="show_insulin">Insulin left</string>
+    <string  name="show_Notifications">Notifications</string>
     <string  name="data_2_show">Data to show</string>
     <string  name="widgetSettings">Settings</string>
-    <string  name="version">Version: 02.02.15_2</string>
+    <string  name="version">Version: 09.02.15_b1</string>
     <style name="ButtonText">
     <item name="android:layout_width">fill_parent</item>
     <item name="android:layout_height">wrap_content</item>

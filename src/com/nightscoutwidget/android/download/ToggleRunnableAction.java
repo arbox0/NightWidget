@@ -38,8 +38,10 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 	public boolean showPumpBattery = true;
 	public boolean showDataDifference = true;
 	public long creationTime = 0;
+	public int initScreen = 0;
 	
 	public ToggleRunnableAction() {
+		
 	}
 
 	@Override
@@ -51,9 +53,11 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 		long current = System.currentTimeMillis();
 		long diff = 0;
 		long lastCreated = prefs.getLong("lastCreatedWidgetDate", 0);
-		boolean showSGV = prefs.getBoolean("showSGV", true);
-		
-		if (this.creationTime < lastCreated){
+		boolean showSGV = prefs.getBoolean("showSGV_widget", true);
+		SharedPreferences settings = ctx.getSharedPreferences("widget_prefs", 0);
+		int screen = settings.getInt("widget_screen", 0);
+    
+		if (this.creationTime < lastCreated || screen != initScreen){
 			mHandlerToggleInfo.removeCallbacks(this);
 			log.info("TOGGLE EXIT!");
 			return;
@@ -73,15 +77,15 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 		}
 		
 		SharedPreferences.Editor editor = prefs.edit();
-		if (prefs.getLong("timeMBG", 0) != 0) {
-			diff = current - prefs.getLong("timeMBG", 0);
+		if (prefs.getLong("timeMBG_widget", 0) != 0) {
+			diff = current - prefs.getLong("timeMBG_widget", 0);
 		} else {
-			editor.putLong("timeMBG", current);
+			editor.putLong("timeMBG_widget", current);
 		}
 		KeyguardManager myKM = (KeyguardManager) ctx
 				.getSystemService(Context.KEYGUARD_SERVICE);
 		if (myKM.inKeyguardRestrictedInputMode()) {
-			if (prefs.getBoolean("showIcon", true)){
+			if (prefs.getBoolean("showIcon_widget", true)){
     			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
     		}else{
     			views.setViewVisibility(R.id.imageButton1, View.GONE);
@@ -89,8 +93,8 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 
 		} else {
 			String webUri = null;
-			if (prefs.contains("web_uri"))
-				webUri = prefs.getString("web_uri",
+			if (prefs.contains("web_uri_widget"))
+				webUri = prefs.getString("web_uri_widget",
 						"http://www.nightscout.info/wiki/welcome");
 			if (webUri != null && webUri.length() > 0
 					&& webUri.indexOf("http://") >= 0) {
@@ -100,7 +104,7 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 						 ctx, 7, intent, 0);
 				views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
 			}
-			if (prefs.getBoolean("showIcon", true)){
+			if (prefs.getBoolean("showIcon_widget", true)){
     			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
     		}else{
     			views.setViewVisibility(R.id.imageButton1, View.GONE);
@@ -116,11 +120,11 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 			views.setOnClickPendingIntent(R.id.widgetSetting, pendingIntent);
 		}
 		editor.commit();
-		if (prefs.getBoolean("show_mobile_battery", true) && prefs.getBoolean("show_MBG", true)){
+		if (prefs.getBoolean("show_mobile_battery_widget", true) && prefs.getBoolean("show_MBG_widget", true)){
 			if (!showSGV && diff != current
 					&& diff >= 10000) {
-				prefs.edit().putBoolean("showSGV", true).commit();
-				prefs.edit().putLong("timeMBG", current).commit();
+				prefs.edit().putBoolean("showSGV_widget", true).commit();
+				prefs.edit().putLong("timeMBG_widget", current).commit();
 				log.info("TOGGLE1 diff "+diff);
 				if (showMBG && (showUploaderBattery)){
 					views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
@@ -129,8 +133,8 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 				manager.updateAppWidget(thisWidget, views);
 			} else if (showSGV && diff != current
 					&& diff >= 10000) {
-				prefs.edit().putBoolean("showSGV", false).commit();
-				prefs.edit().putLong("timeMBG", current).commit();
+				prefs.edit().putBoolean("showSGV_widget", false).commit();
+				prefs.edit().putLong("timeMBG_widget", current).commit();
 				log.info("TOGGLE2 "+diff);
 				if (showMBG && (showUploaderBattery)){
 					views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);
@@ -139,7 +143,7 @@ public class ToggleRunnableAction implements Runnable, OnSharedPreferenceChangeL
 				manager.updateAppWidget(thisWidget, views);
 			}
 
-		} else if (prefs.getBoolean("show_MBG", true) && !prefs.getBoolean("show_mobile_battery", true)){
+		} else if (prefs.getBoolean("show_MBG_widget", true) && !prefs.getBoolean("show_mobile_battery_widget", true)){
 			views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);
 			views.setViewVisibility(R.id.linearLayout2, View.GONE);
 			manager.updateAppWidget(thisWidget, views);

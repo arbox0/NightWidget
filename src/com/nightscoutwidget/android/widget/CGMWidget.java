@@ -2,6 +2,7 @@ package com.nightscoutwidget.android.widget;
 
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.UUID;
 
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.StrictMode;
 import android.preference.PreferenceManager;
@@ -24,6 +26,8 @@ import android.widget.RemoteViews;
 
 import com.nightscoutwidget.android.R;
 import com.nightscoutwidget.android.medtronic.Constants;
+import com.nightscoutwidget.android.settings.SettingsActivity;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -50,6 +54,8 @@ public class CGMWidget extends AppWidgetProvider {
 			    StrictMode.setThreadPolicy(policy);
 			}
 		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
+		 settings.edit().putString("widgetTag", "nightWidget_030215").commit();
+		 settings.edit().putInt("widgetId", 1717030215).commit();
 		 settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
 		 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
 		 LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -70,27 +76,51 @@ public class CGMWidget extends AppWidgetProvider {
 	        SharedPreferences.Editor editor= prefs.edit();
 	        editor.putBoolean("widgetEnabled", true);
 	        editor.commit();
-            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_main);
+	        
+			 settings.edit().putString("widgetTag", "nightWidget_030215").commit();
+			 settings.edit().putInt("widgetId", 1717030215).commit();
+			 settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
+			 int screen = settings.getInt("widget_screen", 0);
+            RemoteViews views = null;
+            if (screen == 0){
+            	views = new RemoteViews(context.getPackageName(), R.layout.widget_main);
+            }else if (screen == 1){
+            	views = new RemoteViews(context.getPackageName(), R.layout.tablet_main_124_315);
+            }else if (screen == 2){
+            	views = new RemoteViews(context.getPackageName(), R.layout.tablet_main_194_315);
+            }else{
+            	views = new RemoteViews(context.getPackageName(), R.layout.tablet_main_264_315);
+            }
             
-            if (prefs.getBoolean("showSGV", true)){
+            if (prefs.getBoolean("showSGV_widget", true)){
 				views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
 				
 				views.setViewVisibility(R.id.linearLayout3, View.GONE);	
-			}else if (!prefs.getBoolean("showSGV", true)){
+			}else if (!prefs.getBoolean("showSGV_widget", true)){
 				
 				views.setViewVisibility(R.id.linearLayout2, View.GONE);
 				
 				views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);	
 			}
             String webUri = null;
-    		if (prefs.getString("web_uri","").trim().equalsIgnoreCase(""))
-    			webUri = prefs.getString("web_uri", "http://www.nightscout.info/wiki/welcome");
+    		if (prefs.getString("web_uri_widget","").trim().equalsIgnoreCase(""))
+    			webUri = "http://www.nightscout.info/wiki/welcome";
+    		else
+    			webUri = prefs.getString("web_uri_widget","");
+    			
     		if (webUri != null && webUri.length() > 0 && webUri.indexOf("http://")>=0){
 	    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
 		        PendingIntent pendingIntent = PendingIntent.getActivity(context, 7, intent, 0);
 		        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
     		}
-    		if (prefs.getBoolean("showIcon", true)){
+			for (int id : appWidgetIDs){
+				
+				Intent intent = new Intent(context,
+						SettingsActivity.class);
+				PendingIntent pendingIntent = PendingIntent.getActivity(context, id, intent, 0);
+				views.setOnClickPendingIntent(R.id.widgetSetting, pendingIntent);
+			}
+    		if (prefs.getBoolean("showIcon_widget", true)){
     			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
     		}else{
     			views.setViewVisibility(R.id.imageButton1, View.GONE);
@@ -125,8 +155,8 @@ public class CGMWidget extends AppWidgetProvider {
             {  
                 service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
             }  
-            if (prefs.contains("refreshPeriod")){
-            	String type = prefs.getString("refreshPeriod", "2");
+            if (prefs.contains("refreshPeriod_widget")){
+            	String type = prefs.getString("refreshPeriod_widget", "2");
             	long time = Constants.TIME_2_MIN_IN_MS;
             	if (type.equalsIgnoreCase("1"))
             		time = Constants.TIME_1_MIN_IN_MS;
@@ -172,7 +202,7 @@ public class CGMWidget extends AppWidgetProvider {
 		 boolean alarmUp = (PendingIntent.getService(context, 27, in, 
 			        PendingIntent.FLAG_NO_CREATE) != null);
 		 long time = Constants.TIME_2_MIN_IN_MS;
-         	String type = prefs.getString("refreshPeriod", "2");
+         	String type = prefs.getString("refreshPeriod_widget", "2");
          	if (type.equalsIgnoreCase("1"))
          		time = Constants.TIME_1_MIN_IN_MS;
          	else if (type.equalsIgnoreCase("3"))
@@ -193,7 +223,51 @@ public class CGMWidget extends AppWidgetProvider {
          		time = Constants.TIME_60_MIN_IN_MS;
          	else
          		time = Constants.TIME_2_MIN_IN_MS;
-         
+         	 int screen = settings.getInt("widget_screen", 0);
+             RemoteViews views = null;
+             if (screen == 0){
+             	views = new RemoteViews(context.getPackageName(), R.layout.widget_main);
+             }else if (screen == 1){
+             	views = new RemoteViews(context.getPackageName(), R.layout.tablet_main_124_315);
+             }else if (screen == 2){
+             	views = new RemoteViews(context.getPackageName(), R.layout.tablet_main_194_315);
+             }else{
+             	views = new RemoteViews(context.getPackageName(), R.layout.tablet_main_264_315);
+             }
+             
+             if (prefs.getBoolean("showSGV_widget", true)){
+    				views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
+    				
+    				views.setViewVisibility(R.id.linearLayout3, View.GONE);	
+    			}else if (!prefs.getBoolean("showSGV_widget", true)){
+    				
+    				views.setViewVisibility(R.id.linearLayout2, View.GONE);
+    				
+    				views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);	
+    			}
+             String webUri = null;
+     		if (prefs.getString("web_uri_widget","").trim().equalsIgnoreCase(""))
+     			webUri = "http://www.nightscout.info/wiki/welcome";
+     		else
+     			webUri = prefs.getString("web_uri_widget","");
+     			
+     		if (webUri != null && webUri.length() > 0 && webUri.indexOf("http://")>=0){
+    	    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
+    		        PendingIntent pendingIntent = PendingIntent.getActivity(context, 7, intent, 0);
+    		        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
+     		}
+    			for (int id : appWidgetIds){
+    				
+    				Intent intent = new Intent(context,
+    						SettingsActivity.class);
+    				PendingIntent pendingIntent = PendingIntent.getActivity(context, id, intent, 0);
+    				views.setOnClickPendingIntent(R.id.widgetSetting, pendingIntent);
+    			}
+     		if (prefs.getBoolean("showIcon_widget", true)){
+     			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+     		}else{
+     			views.setViewVisibility(R.id.imageButton1, View.GONE);
+     		}
 
 		log.info("onUpdate "+ alarmUp);
 		 for (int i = 0; i < appWidgetIds.length; i++) {
@@ -221,6 +295,7 @@ public class CGMWidget extends AppWidgetProvider {
 			    	 }
 		    	 }
 		     }
+		     appWidgetManager.updateAppWidget(id, views);
 		 }
 		 final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 		 if (!alarmUp ){
@@ -233,8 +308,8 @@ public class CGMWidget extends AppWidgetProvider {
 	            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
 	         log.warn("ALARM IS DOWN I MUST REACTIVATE");
 		 }
-         
-
+		
+ 		
 	 }
 	 @Override
 	 public void onDeleted(Context context, int[] AppWidgetIds){
@@ -249,6 +324,82 @@ public class CGMWidget extends AppWidgetProvider {
 				 settings.edit().remove(key).commit();
 		 }
 	 }
+	 
+	 @Override
+	  public void onAppWidgetOptionsChanged(Context ctxt,
+	                                        AppWidgetManager mgr,
+	                                        int appWidgetId,
+	                                        Bundle newOptions) {
+	    
+		 
+		int  min_height = newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
+		SharedPreferences settings = ctxt.getSharedPreferences("widget_prefs", 0);
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctxt);
+		 
+		String msg=
+		        String.format(Locale.getDefault(),
+		                      "[%d-%d] x [%d-%d]",
+		                      newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
+		                      newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH),
+		                      newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
+		                      newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT));
+		log.info(msg);
+		RemoteViews views = null;
+		if (min_height < 124){
+			views = new RemoteViews(ctxt.getPackageName(), R.layout.widget_main);
+			log.info("SCREEN "+0);
+	         settings.edit().putInt("widget_screen", 0).commit();
+		}else if (min_height >= 124 && min_height < 194){
+			settings.edit().putInt("widget_screen", 1).commit();
+			log.info("SCREEN "+1);
+			views = new RemoteViews(ctxt.getPackageName(), R.layout.tablet_main_124_315);
+		}else if (min_height >= 194 && min_height < 264){
+			settings.edit().putInt("widget_screen", 2).commit();
+			views = new RemoteViews(ctxt.getPackageName(), R.layout.tablet_main_194_315);
+			log.info("SCREEN "+2);
+		}else if (min_height >= 264){
+			settings.edit().putInt("widget_screen", 3).commit();
+			views = new RemoteViews(ctxt.getPackageName(), R.layout.tablet_main_264_315);
+			log.info("SCREEN "+3);
+		}
+		
+			
+			Intent intent1 = new Intent(ctxt,
+					SettingsActivity.class);
+			PendingIntent pendingIntent1 = PendingIntent.getActivity(ctxt, appWidgetId, intent1, 0);
+			views.setOnClickPendingIntent(R.id.widgetSetting, pendingIntent1);
+		
+		 if (prefs.getBoolean("showSGV_widget", true)){
+				views.setViewVisibility(R.id.linearLayout2, View.VISIBLE);
+				
+				views.setViewVisibility(R.id.linearLayout3, View.GONE);	
+			}else if (!prefs.getBoolean("showSGV_widget", true)){
+				
+				views.setViewVisibility(R.id.linearLayout2, View.GONE);
+				
+				views.setViewVisibility(R.id.linearLayout3, View.VISIBLE);	
+			}
+         String webUri = null;
+ 		if (prefs.getString("web_uri_widget","").trim().equalsIgnoreCase(""))
+ 			webUri = "http://www.nightscout.info/wiki/welcome";
+ 		else
+ 			webUri = prefs.getString("web_uri_widget","");
+ 			
+ 		if (webUri != null && webUri.length() > 0 && webUri.indexOf("http://")>=0){
+	    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
+		        PendingIntent pendingIntent = PendingIntent.getActivity(ctxt, 7, intent, 0);
+		        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
+ 		}
+ 		if (prefs.getBoolean("showIcon_widget", true)){
+ 			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
+ 		}else{
+ 			views.setViewVisibility(R.id.imageButton1, View.GONE);
+ 		}
+
+		 mgr.updateAppWidget(appWidgetId, views);
+	  }
+	 
+	 
 	 @Override  
 	    public void onDisabled(Context context)  
 	    {  
@@ -314,7 +465,7 @@ public class CGMWidget extends AppWidgetProvider {
 		
 				 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
 				 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-            	String type = prefs.getString("refreshPeriod", "2");
+            	String type = prefs.getString("refreshPeriod_widget", "2");
             	long time = Constants.TIME_2_MIN_IN_MS;
             	if (type.equalsIgnoreCase("1"))
             		time = Constants.TIME_1_MIN_IN_MS;

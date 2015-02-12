@@ -55,10 +55,10 @@ public class CGMWidgetUpdater extends Service {
 	        uuid = UUID.randomUUID().toString();
 	        editor.putString("widget_uuid", uuid);
 	        editor.commit();
-		if (prefs.contains("IUNDERSTAND"))
-			iUnderstand = prefs.getBoolean("IUNDERSTAND", false);
-		if (prefs.contains("monitor_type")) {
-			String type = prefs.getString("monitor_type", "1");
+		if (prefs.contains("IUNDERSTAND_widget"))
+			iUnderstand = prefs.getBoolean("IUNDERSTAND_widget", false);
+		if (prefs.contains("monitor_type_widget")) {
+			String type = prefs.getString("monitor_type_widget", "1");
 			if ("2".equalsIgnoreCase(type)) {
 				cgmSelected = Constants.MEDTRONIC_CGM;
 			} else {
@@ -70,10 +70,10 @@ public class CGMWidgetUpdater extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		log.info("onStartCommand");
-		if (prefs.contains("IUNDERSTAND")) {
-			iUnderstand = prefs.getBoolean("IUNDERSTAND", false);
-		} else if (prefs.contains("monitor_type")) {
-			String type = prefs.getString("monitor_type", "1");
+		if (prefs.contains("IUNDERSTAND_widget")) {
+			iUnderstand = prefs.getBoolean("IUNDERSTAND_widget", false);
+		} else if (prefs.contains("monitor_type_widget")) {
+			String type = prefs.getString("monitor_type_widget", "1");
 			if ("2".equalsIgnoreCase(type)) {
 				cgmSelected = Constants.MEDTRONIC_CGM;
 			} else {
@@ -105,27 +105,37 @@ public class CGMWidgetUpdater extends Service {
 				.getSystemService(Context.KEYGUARD_SERVICE);
 		if (myKM.inKeyguardRestrictedInputMode()) {
 			views = new RemoteViews(getPackageName(), R.layout.widget_main);
-			if (prefs.getBoolean("showIcon", true)){
+			if (prefs.getBoolean("showIcon_widget", true)){
     			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
     		}else{
     			views.setViewVisibility(R.id.imageButton1, View.GONE);
     		}
 
 		} else {
-			views = new RemoteViews(getPackageName(), R.layout.widget_main);
-			String webUri = null;
-			if (prefs.getString("web_uri","").trim().equalsIgnoreCase(""))
-				webUri = prefs.getString("web_uri",
-						"http://www.nightscout.info/wiki/welcome");
-			if (webUri != null && webUri.length() > 0
-					&& webUri.indexOf("http://") >= 0) {
-				Intent intent = new Intent(Intent.ACTION_VIEW,
-						Uri.parse(webUri));
-				PendingIntent pendingIntent = PendingIntent.getActivity(
-						getBaseContext(), 7, intent, 0);
-				views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
-			}
-			if (prefs.getBoolean("showIcon", true)){
+			SharedPreferences settings = getSharedPreferences("widget_prefs", 0);
+			int screen = settings.getInt("widget_screen", 0);
+            views = new RemoteViews(getPackageName(), R.layout.widget_main);
+            if (screen == 0){
+            	views = new RemoteViews(getPackageName(), R.layout.widget_main);
+            }else if (screen == 1){
+            	views = new RemoteViews(getPackageName(), R.layout.tablet_main_124_315);
+            }else if (screen == 2){
+            	views = new RemoteViews(getPackageName(), R.layout.tablet_main_194_315);
+            }else{
+            	views = new RemoteViews(getPackageName(), R.layout.tablet_main_264_315);
+            }
+			 String webUri = null;
+		 		if (prefs.getString("web_uri_widget","").trim().equalsIgnoreCase(""))
+		 			webUri = "http://www.nightscout.info/wiki/welcome";
+		 		else
+		 			webUri = prefs.getString("web_uri_widget","");
+		 			
+		 		if (webUri != null && webUri.length() > 0 && webUri.indexOf("http://")>=0){
+			    		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
+				        PendingIntent pendingIntent = PendingIntent.getActivity(getBaseContext(), 7, intent, 0);
+				        views.setOnClickPendingIntent(R.id.imageButton1, pendingIntent);
+		 		}
+			if (prefs.getBoolean("showIcon_widget", true)){
     			views.setViewVisibility(R.id.imageButton1, View.VISIBLE);
     		}else{
     			views.setViewVisibility(R.id.imageButton1, View.GONE);
@@ -144,10 +154,12 @@ public class CGMWidgetUpdater extends Service {
 		
 		dwHelper = new DownloadHelper(getBaseContext(), cgmSelected, prefs);
 		dwHelper.setPrefs(prefs);
+		SharedPreferences settings = getBaseContext().getSharedPreferences("widget_prefs", 0);
 		
 	
 		dwHelper.mToggleRunnableAction = new ToggleRunnableAction();
 		dwHelper.mToggleRunnableAction.ctx = getBaseContext();
+		dwHelper.mToggleRunnableAction.initScreen = settings.getInt("widget_screen", 0);
 		dwHelper.mToggleRunnableAction.thisWidget = thisWidget;
 		dwHelper.mToggleRunnableAction.manager = manager;
 		dwHelper.mToggleRunnableAction.views = views;

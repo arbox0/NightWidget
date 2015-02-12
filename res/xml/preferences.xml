@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="Monitor">
         <ListPreference
-        android:key="monitor_type"
+        android:key="monitor_type_widget"
         android:disableDependentsState="false"
         android:title="Type"
         android:summary="Select item from array"
@@ -12,10 +12,10 @@
         />
         <EditTextPreference
             android:title="Pump ID"
-            android:key="medtronic_cgm_id"
+            android:key="medtronic_cgm_id_widget"
             android:dialogTitle="Enter your Guardian/Pump ID"/>
          <ListPreference
-        android:key="refreshPeriod"
+        android:key="refreshPeriod_widget"
         android:disableDependentsState="false"
         android:title="Widget Refresh Period"
         android:summary="Select item from array"
@@ -24,7 +24,7 @@
         android:defaultValue="2"
         />
         <ListPreference
-        android:key="reservoir_ins_units"
+        android:key="reservoir_ins_units_widget"
         android:disableDependentsState="false"
         android:title="Max. insulin units"
         android:summary="Select item from array"
@@ -33,7 +33,7 @@
         android:defaultValue="2"
         />
          <ListPreference
-        android:key="metric_preference"
+        android:key="metric_preference_widget"
         android:disableDependentsState="false"
         android:title="SGV Metric"
         android:summary="Select item from array"
@@ -41,35 +41,49 @@
         android:entryValues="@array/types_values"
         android:defaultValue="1"
         />
+         <com.nightscoutwidget.android.utils.CustomSwitchPreference
+	            android:title="mmol/l decimals"
+	            android:key="mmolDecimals_widget"
+	            android:defaultValue="false"
+	            android:switchTextOn="2"
+	            android:switchTextOff="1"
+	            android:summaryOn="Activated. 2 Decimal values will be shown ."
+	            android:summaryOff="Deactivated. 1 Decimal value will be shown .">
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
         <PreferenceScreen
-        android:key="data_2_show"
+        android:key="data_2_show_widget"
         android:disableDependentsState="false"
         android:title="@string/data_2_show"
         android:persistent="false">
         <CheckBoxPreference
-            android:key="show_insulin"
+            android:key="show_insulin_widget"
         	android:disableDependentsState="false"
         	android:title="@string/show_insulin"
         	android:defaultValue="true"/>
         <CheckBoxPreference
-            android:key="show_pump_battery"
+            android:key="show_pump_battery_widget"
         	android:disableDependentsState="false"
         	android:title="@string/show_pump_battery"
         	android:defaultValue="true"/>
         <CheckBoxPreference
-            android:key="show_mobile_battery"
+            android:key="show_mobile_battery_widget"
         	android:disableDependentsState="false"
         	android:title="@string/show_mobile_battery"
         	android:defaultValue="true"/>
         <CheckBoxPreference
-            android:key="show_MBG"
+            android:key="show_MBG_widget"
         	android:disableDependentsState="false"
         	android:title="@string/show_MBG"
+        	android:defaultValue="true"/>
+        <CheckBoxPreference
+            android:key="show_Notifications_widget"
+        	android:disableDependentsState="false"
+        	android:title="@string/show_Notifications"
         	android:defaultValue="true"/>
         </PreferenceScreen>
         <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Activate Alarms"
-	            android:key="alarms_active"
+	            android:key="alarms_active_widget"
 	            android:disableDependentsState="false"
 	            android:defaultValue="true"
 	            android:switchTextOn="ON"
@@ -79,8 +93,8 @@
 	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Activate Alert Vibration"
-	            android:key="vibrationActive"
-	            android:dependency="alarms_active"
+	            android:key="vibrationActive_widget"
+	            android:dependency="alarms_active_widget"
 	            android:defaultValue="true"
 	            android:switchTextOn="ON"
 	            android:switchTextOff="OFF"
@@ -88,13 +102,13 @@
 	            android:summaryOff="Deactivated. The phone will NOT vibrate when an alarm/warning is raised.">
 	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
        <PreferenceScreen
-        android:key="alert_thresholds"
-        android:dependency="alarms_active"
+        android:key="alert_thresholds_widget"
+        android:dependency="alarms_active_widget"
         android:title="@string/alert_thresholds"
         android:persistent="false">
         <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Conn. lost alarm"
-	            android:key="alarm_lost"
+	            android:key="alarm_lost_widget"
 	            android:disableDependentsState="false"
 	            android:defaultValue="true"
 	            android:switchTextOn="ON"
@@ -104,15 +118,15 @@
 	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Alarm Sound"
-		    android:dependency="alarm_lost"
-		    android:key="alarmlost_ringtone"
+		    android:dependency="alarm_lost_widget"
+		    android:key="alarmlost_ringtone_widget"
 		    android:ringtoneType="all"
 		    android:showDefault="true"
 		    android:showSilent="false"
 		    android:defaultValue="content://settings/system/notification_sound"
 		    />
 	      <ListPreference
-	        android:key="minrefreshPeriod"
+	        android:key="minrefreshPeriod_widget"
 	        android:disableDependentsState="false"
 	        android:title="Time Threshold"
 	        android:summary="Select item from array"
@@ -122,7 +136,7 @@
 	        />
 	       <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Alarm on error values"
-	            android:key="alarm_error"
+	            android:key="alarm_error_widget"
 	            android:disableDependentsState="false"
 	            android:defaultValue="false"
 	            android:switchTextOn="ON"
@@ -132,8 +146,8 @@
 	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Alarm Sound"
-		    android:dependency="alarm_error"
-		    android:key="alarmerror_ringtone"
+		    android:dependency="alarm_error_widget"
+		    android:key="alarmerror_ringtone_widget"
 		    android:ringtoneType="all"
 		    android:showDefault="true"
 		    android:showSilent="false"
@@ -141,7 +155,7 @@
 		    />
          <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Sound Alarm"
-	            android:key="sound_alarm"
+	            android:key="sound_alarm_widget"
 	            android:disableDependentsState="false"
 	            android:defaultValue="true"
 	            android:switchTextOn="ON"
@@ -151,8 +165,8 @@
 	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Alarm Sound"
-		    android:dependency="sound_alarm"
-		    android:key="alarm_ringtone"
+		    android:dependency="sound_alarm_widget"
+		    android:key="alarm_ringtone_widget"
 		    android:ringtoneType="all"
 		    android:showDefault="true"
 		    android:showSilent="false"
@@ -160,7 +174,7 @@
 		    />
 	    <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Sound Warning"
-	            android:key="sound_warning"
+	            android:key="sound_warning_widget"
 	            android:disableDependentsState="false"
 	            android:switchTextOn="ON"
 	            android:switchTextOff="OFF"
@@ -170,33 +184,33 @@
 	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <RingtonePreference
 		    android:title="Choose Warning Sound"
-		     android:dependency="sound_warning"
-		    android:key="warning_ringtone"
+		     android:dependency="sound_warning_widget"
+		    android:key="warning_ringtone_widget"
 		    android:showDefault="true"
 		    android:showSilent="false"
 		    android:defaultValue="content://settings/system/notification_sound"
 		    android:ringtoneType="all"/>
          <EditTextPreference
             android:title="@string/upper_warning"
-            android:key="upper_warning_color"
+            android:key="upper_warning_color_widget"
             android:dialogTitle="Upper warning Threshold (YELLOW)"
             android:inputType="number"
             android:defaultValue="@string/upper_warning_defval"/>
           <EditTextPreference
             android:title="@string/lower_warning"
-            android:key="lower_warning_color"
+            android:key="lower_warning_color_widget"
             android:defaultValue="@string/lower_warning_defval"
             android:dialogTitle="Lower warning threshold (YELLOW)"
             android:inputType="number"/>
            <EditTextPreference
             android:title="@string/upper_alarm"
-            android:key="upper_alarm_color"
+            android:key="upper_alarm_color_widget"
             android:defaultValue="@string/upper_alarm_defval"
             android:dialogTitle="Upper alarm threshold (RED)"
             android:inputType="number"/>
             <EditTextPreference
             android:title="@string/lower_alarm"
-            android:key="lower_alarm_color"
+            android:key="lower_alarm_color_widget"
             android:defaultValue="@string/lower_alarm_defval"
             android:dialogTitle="Lower alarm threshold (RED)"
             android:inputType="number"/>
@@ -205,7 +219,7 @@
     <PreferenceCategory android:title="Sharing">
      <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Show Widget Icon"
-	            android:key="showIcon"
+	            android:key="showIcon_widget"
 	            android:disableDependentsState="false"
 	            android:defaultValue="true"
 	            android:switchTextOn="YES"
@@ -215,14 +229,14 @@
 	 </com.nightscoutwidget.android.utils.CustomSwitchPreference>
     <EditTextPreference
             android:title="MongoDB URI"
-            android:key="MongoDB URI"
+            android:key="MongoDB URI_widget"
             android:dialogTitle="Enter MongoDB URI"
             android:dialogMessage="Replace example values in {}'s with your correct values"
             android:defaultValue="mongodb://{user}:{password}@{host}.mongolab.com:{11111}/{database}">
     </EditTextPreference>
     <EditTextPreference
             android:title="Collection Name"
-            android:key="Collection Name"
+            android:key="Collection Name_widget"
             android:dialogTitle="Enter Collection Name"
             android:dialogMessage="This is the name of the collection where the CGM data is stored">
     </EditTextPreference>
@@ -234,7 +248,7 @@
     </EditTextPreference>-->
      <EditTextPreference
             android:title="WEB URI"
-            android:key="web_uri"
+            android:key="web_uri_widget"
             android:dialogTitle="Enter WEB URI"
             android:dialogMessage="Please, write the web address where your nightscout page is published">
     </EditTextPreference>
@@ -242,7 +256,7 @@
      <PreferenceCategory android:title="Disclaimer">
 	    <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="I UNDERSTAND"
-	            android:key="IUNDERSTAND"
+	            android:key="IUNDERSTAND_widget"
 	            android:disableDependentsState="false"
 	            android:switchTextOn="YES"
 	            android:switchTextOff="NO"
@@ -250,7 +264,7 @@
 	            android:summaryOff="Deactivated. Nightwidget should not be used to make medical decisions. There is no support or any warranty of any kind. The quality and performance of the project is with you. This is a project that was created and is supported completely by volunteers">
 	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
 	    <Preference 
-		 android:key="version"
+		 android:key="version_widget"
 		 android:title="@string/version" />
     </PreferenceCategory>
 </PreferenceScreen>
