@@ -204,7 +204,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		URI nUri = null;
 		try {
 			nUri = new URI("https", null, "api.mongolab.com", 443, url, "apiKey="+apiKey,null);
-			HttpPost postRequest = new HttpPost(url);
+			HttpPost postRequest = new HttpPost(nUri);
 			postRequest.setHeader("Accept", "application/json");
 	        postRequest.setHeader("Content-type", "application/json");
 	        StringEntity se = new StringEntity(data.toString());
