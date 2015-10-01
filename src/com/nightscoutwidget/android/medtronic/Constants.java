@@ -53,6 +53,8 @@ public class Constants {
 	public static final int CALIBRATED_IN_15MIN = 4;
 	public static final int CALIBRATING = 5;
 	public static final int CALIBRATING2 = 6;
+	
+	public static final String mongoURI = "https://api.mongolab.com/api/1/databases/";
 
 	public static String getWidgetCalAppend(int val) {
 		switch (val) {

@@ -1,11 +1,29 @@
 package com.nightscoutwidget.android.download;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
@@ -28,6 +46,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -99,6 +118,135 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		this.prefs = prefs;
 
 	}
+	
+	private JSONArray doGetRequest(HttpClient client, String url, String filter, String sort, String limit, String apiKey){
+		JSONArray result = null;
+		 URI nUri = null;
+		 String query = "";
+		 if (filter != null && filter.length() > 0) {
+			 query += filter + "&";
+		 }
+		 if (sort != null && sort.length() > 0) {
+			 query += sort + "&";
+		 }
+		 if (limit != null && limit.length() > 0) {
+			 query += limit + "&";
+		 }
+		    try {
+				nUri = new URI("https", null, "api.mongolab.com", 443, url, query + "apiKey="+apiKey,null);
+			} catch (URISyntaxException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+		    //URIUtils.
+		    HttpGet getRequest = new HttpGet(nUri);
+		    HttpPost postRequest = null;
+		    getRequest.addHeader("accept", "application/json");
+		    try {
+				HttpResponse response = client.execute(getRequest);
+				InputStream instream = response.getEntity().getContent();
+		        String sResult = convertStreamToString(instream);
+		        // now you have the string representation of the HTML request
+		        System.out.println("RESPONSE: " + sResult);
+		        instream.close();
+		        result = new JSONArray(sResult);
+			} catch (ClientProtocolException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (Exception e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+		return result;
+	}
+	
+	private boolean doPutRequest(HttpClient client, String url, String filter, String apiKey, JSONObject data){
+		 String query = "";
+		 if (filter != null && filter.length() > 0) {
+			 query += filter + "&";
+		 }
+	
+		try {
+			URI nUri = null;
+		    try {
+				nUri = new URI("https", null, "api.mongolab.com", 443, url, query + "&apiKey="+apiKey,null);
+			} catch (URISyntaxException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+				return false;
+			}
+			HttpPut putRequest = new HttpPut(nUri);
+			putRequest.setHeader("Accept", "application/json");
+			putRequest.setHeader("Content-type", "application/json");
+	        StringEntity se = new StringEntity(data.toString());
+	        putRequest.setEntity(se);
+	        HttpResponse resp = client.execute(putRequest);
+	        if (resp.getStatusLine().getStatusCode() > 201) {
+	        	Log.e("UploaderHelper", "The can't be uploaded");
+				log.error("The record can't be uploaded Code: "+resp.getStatusLine().getStatusCode());
+				return false;
+	        }
+		}catch(IllegalArgumentException ex){
+			log.error("UploaderHelper", "Illegal record");
+			return false;
+		}catch (Exception e){
+			Log.e("UploaderHelper", "The retried can't be uploaded");
+			log.error("The retried record can't be uploaded ", e);
+			return false;
+		}
+		return true;
+	}
+	
+	private boolean doPostRequest(HttpClient client, String url, String apiKey, JSONObject data){
+		URI nUri = null;
+		try {
+			nUri = new URI("https", null, "api.mongolab.com", 443, url, "apiKey="+apiKey,null);
+			HttpPost postRequest = new HttpPost(url);
+			postRequest.setHeader("Accept", "application/json");
+	        postRequest.setHeader("Content-type", "application/json");
+	        StringEntity se = new StringEntity(data.toString());
+	        postRequest.setEntity(se);
+	        HttpResponse resp = client.execute(postRequest);
+	        if (resp.getStatusLine().getStatusCode() > 201) {
+	        	Log.e("UploaderHelper", "The can't be uploaded");
+				log.error("The record can't be uploaded Code: "+resp.getStatusLine().getStatusCode());
+				return false;
+	        }
+		}catch(IllegalArgumentException ex){
+			log.error("UploaderHelper", "Illegal record");
+			return false;
+		}catch (Exception e){
+			Log.e("UploaderHelper", "The retried can't be uploaded");
+			log.error("The retried record can't be uploaded ", e);
+			return false;
+		}
+		return true;
+	}
+	
+	private static String convertStreamToString(InputStream is) {
+
+	    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+	    StringBuilder sb = new StringBuilder();
+
+	    String line = null;
+	    try {
+	        while ((line = reader.readLine()) != null) {
+	            sb.append(line + "\n");
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    } finally {
+	        try {
+	            is.close();
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	    }
+	    return sb.toString();
+	}
 
 	/**
 	 * 
@@ -108,10 +256,27 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		log.info("doMongoDownload");
 		String dbURI = prefs.getString("MongoDB URI_widget", null);
 		String collectionName = prefs.getString("Collection Name_widget", "entries");
+		String apiKey = prefs.getString("apiKey_widget", "aaaaa");
 		String dsCollectionName = prefs.getString(
 				"DeviceStatus Collection Name", "devicestatus");
 		// String gdCollectionName = prefs.getString("gcdCollectionName", null);
+		HttpParams params = new BasicHttpParams();
+	    //HttpConnectionParams.setSoTimeout(params, 60000);
+	    HttpConnectionParams.setConnectionTimeout(params, 60000);
 		String devicesCollectionName = "devices";
+		DefaultHttpClient httpclient = new DefaultHttpClient(params);
+	    String dbName = "";
+	    String[] splitted = dbURI.split(":");
+    	if (splitted.length >= 4 ){
+    		dbName = prefs.getString("dbName_widget", "");
+    	}
+    	System.out.println("DATABASE!!!! "+ dbName);
+	    String entriesUrl =  "/api/1/databases/"+dbName + "/collections/"+collectionName;
+	    String deviceStatusUrl =  "/api/1/databases/"+dbName + "/collections/"+devicesCollectionName;
+	    String dsCollectioncUrl =  "/api/1/databases/"+dbName + "/collections/"+dsCollectionName;
+	    String filter = "q={'type':{$ne:'mbg'}}";
+	    String sort =  "s={'date':-1}";
+	    String limit = "l=1&";
 		JSONObject result = null;
 		JSONObject resultMbg = null;
 		JSONObject finalResult = null;
@@ -121,179 +286,263 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			finalResult = new JSONObject();
 			MongoClient client = null;
 			try {
-
-				// connect to db
-				// MongoClientURI uri = new MongoClientURI(dbURI.trim());
-				Builder b = MongoClientOptions.builder();
-				b.alwaysUseMBeans(false);
-				b.connectTimeout(60000);
-				b.heartbeatSocketTimeout(60000);
-				b.maxWaitTime(60000);
-				boolean bAchieved = false;
-				String user = "";
-				String password = "";
-				String source = "";
-				String host = "";
-				String port = "";
-				int iPort = -1;
-				if (dbURI.length() > 0) {
-					String[] splitted = dbURI.split(":");
-					if (splitted.length >= 4) {
-						user = splitted[1].substring(2);
-						if (splitted[2].indexOf("@") < 0)
-							bAchieved = false;
-						else {
-							password = splitted[2].substring(0,
-									splitted[2].indexOf("@"));
-							host = splitted[2].substring(
-									splitted[2].indexOf("@") + 1,
-									splitted[2].length());
-							if (splitted[3].indexOf("/") < 0)
-								bAchieved = false;
-							else {
-								port = splitted[3].substring(0,
-										splitted[3].indexOf("/"));
-								source = splitted[3].substring(
-										splitted[3].indexOf("/") + 1,
-										splitted[3].length());
-								try {
-									iPort = Integer.parseInt(port);
-								} catch (Exception ne) {
-									iPort = -1;
+				if (!prefs.getBoolean("isMongoRest_widget", false)) {
+					
+							// MongoClientURI uri = new MongoClientURI(dbURI.trim());
+							Builder b = MongoClientOptions.builder();
+							b.alwaysUseMBeans(false);
+							b.connectTimeout(60000);
+							b.heartbeatSocketTimeout(60000);
+							b.maxWaitTime(60000);
+							boolean bAchieved = false;
+							String user = "";
+							String password = "";
+							String source = "";
+							String host = "";
+							String port = "";
+							int iPort = -1;
+							if (dbURI.length() > 0) {
+								splitted = dbURI.split(":");
+								if (splitted.length >= 4) {
+									user = splitted[1].substring(2);
+									if (splitted[2].indexOf("@") < 0)
+										bAchieved = false;
+									else {
+										password = splitted[2].substring(0,
+												splitted[2].indexOf("@"));
+										host = splitted[2].substring(
+												splitted[2].indexOf("@") + 1,
+												splitted[2].length());
+										if (splitted[3].indexOf("/") < 0)
+											bAchieved = false;
+										else {
+											port = splitted[3].substring(0,
+													splitted[3].indexOf("/"));
+											source = splitted[3].substring(
+													splitted[3].indexOf("/") + 1,
+													splitted[3].length());
+											try {
+												iPort = Integer.parseInt(port);
+											} catch (Exception ne) {
+												iPort = -1;
+											}
+											if (iPort > -1)
+												bAchieved = true;
+										}
+									}
 								}
-								if (iPort > -1)
-									bAchieved = true;
+							}
+							log.debug("Uri TO CHANGE user " + user + " host "
+									+ source + " password " + 
+									password);
+							
+							if (bAchieved) {
+								MongoCredential mc = MongoCredential
+										.createMongoCRCredential(user, source,
+												password.toCharArray());
+								ServerAddress sa = new ServerAddress(host, iPort);
+								List<MongoCredential> lcredential = new ArrayList<MongoCredential>();
+								lcredential.add(mc);
+								if (sa != null && sa.getHost() != null
+										&& sa.getHost().indexOf("localhost") < 0) {
+									client = new MongoClient(sa, lcredential, b.build());
+
+								}
+							}
+							// client = new MongoClient(uri);
+							MongoClientURI uri = new MongoClientURI(dbURI.trim());
+							// get db
+							DB db = client.getDB(uri.getDatabase());
+
+							// get collection
+							DBCollection dexcomData = null;
+							// DBCollection glucomData = null;
+							DBCollection deviceData = db
+									.getCollection(devicesCollectionName);
+							DBObject medtronicDevice = null;
+							DBObject record = null;
+							DBObject recordMbg = null;
+							if (deviceData != null
+									&& cgmSelected == Constants.MEDTRONIC_CGM) {
+								DBCursor deviceCursor = deviceData
+										.find(new BasicDBObject("deviceId", prefs
+												.getString("medtronic_cgm_id_widget", "")));
+								if (deviceCursor.hasNext()) {
+									medtronicDevice = deviceCursor.next();
+									if (medtronicDevice.containsField("insulinLeft")) {
+										result.put("insulinLeft",
+												medtronicDevice.get("insulinLeft"));
+									}
+									if (medtronicDevice.containsField("alarm")) {
+										result.put("alarm", medtronicDevice.get("alarm"));
+									}
+									if (medtronicDevice.containsField("batteryStatus")) {
+										result.put("batteryStatus",
+												medtronicDevice.get("batteryStatus"));
+									}
+									if (medtronicDevice.containsField("batteryVoltage")) {
+										result.put("batteryVoltage",
+												medtronicDevice.get("batteryVoltage"));
+									}
+									if (medtronicDevice.containsField("isWarmingUp")) {
+										result.put("isWarmingUp",
+												medtronicDevice.get("isWarmingUp"));
+									}
+								}
+							}
+							if (collectionName != null) {
+								dexcomData = db.getCollection(collectionName.trim());
+								log.info("retrieving data");
+								DBCursor dexcomCursor = dexcomData
+										.find(QueryBuilder.start("type").notEquals("mbg")
+												.get()).sort(new BasicDBObject("date", -1))
+										.limit(1);
+								DBCursor mbgCursor = dexcomData
+										.find(QueryBuilder.start("type").is("mbg").get())
+										.sort(new BasicDBObject("date", -1)).limit(1);
+								log.info("data retrieved");
+								if (dexcomCursor.hasNext()) {
+									record = dexcomCursor.next();
+									if (record.containsField("date"))
+										result.put("date", record.get("date"));
+									if (record.containsField("dateString"))
+										result.put("dateString", record.get("dateString"));
+									if (record.containsField("device"))
+										result.put("device", record.get("device"));
+									if (record.containsField("sgv"))
+										result.put("sgv", record.get("sgv"));
+									if (record.containsField("direction"))
+										result.put("direction", record.get("direction"));
+
+									if (cgmSelected == Constants.MEDTRONIC_CGM) {
+										if (record.containsField("calibrationStatus"))
+											result.put("calibrationStatus",
+													record.get("calibrationStatus"));
+										if (record.containsField("isCalibrating"))
+											result.put("isCalibrating",
+													record.get("isCalibrating"));
+									}
+								}
+								if (mbgCursor.hasNext()) {
+									recordMbg = mbgCursor.next();
+									if (recordMbg.containsField("date"))
+										resultMbg.put("date", recordMbg.get("date"));
+									if (recordMbg.containsField("dateString"))
+										resultMbg.put("dateString",
+												recordMbg.get("dateString"));
+									if (recordMbg.containsField("mbg"))
+										resultMbg.put("mbg", recordMbg.get("mbg"));
+								}
+							}
+							/*
+							 * if (gdCollectionName != null){ glucomData =
+							 * db.getCollection(gdCollectionName.trim());
+							 * glucomData.find().sort(new BasicDBObject("_id",-1)).limit(1);
+							 * }
+							 */
+
+							DBCollection dsCollection = db.getCollection(dsCollectionName);
+							DBObject deviceStatus = null;
+							if (dsCollection != null) {
+								DBCursor cursorDeviceStatus = dsCollection.find().sort(
+										new BasicDBObject("created_at", -1));
+								if (cursorDeviceStatus.hasNext()) {
+									deviceStatus = cursorDeviceStatus.next();
+									if (deviceStatus.containsField("uploaderBattery"))
+										result.put("uploaderBattery",
+												deviceStatus.get("uploaderBattery"));
+									if (deviceStatus.containsField("created_at"))
+										result.put("created_at",
+												deviceStatus.get("created_at"));
+								}
+								cursorDeviceStatus.close();
+							}
+							// Uploading devicestatus
+							client.close();
+				} else {
+					
+					if (cgmSelected == Constants.MEDTRONIC_CGM) {
+						filter = "q={'deviceId':{$eq:'"+prefs.getString("medtronic_cgm_id_widget", "")+"'}}";
+						JSONArray medtronicDeviceCursor = doGetRequest(httpclient, deviceStatusUrl, filter, null, "1", apiKey);
+						if (medtronicDeviceCursor != null && medtronicDeviceCursor.length() > 0) {
+							JSONObject medtronicDevice = (JSONObject)medtronicDeviceCursor.get(0);
+							if (medtronicDevice.has("insulinLeft")) {
+								result.put("insulinLeft",
+										medtronicDevice.get("insulinLeft"));
+							}
+							if (medtronicDevice.has("alarm")) {
+								result.put("alarm", medtronicDevice.get("alarm"));
+							}
+							if (medtronicDevice.has("batteryStatus")) {
+								result.put("batteryStatus",
+										medtronicDevice.get("batteryStatus"));
+							}
+							if (medtronicDevice.has("batteryVoltage")) {
+								result.put("batteryVoltage",
+										medtronicDevice.get("batteryVoltage"));
+							}
+							if (medtronicDevice.has("isWarmingUp")) {
+								result.put("isWarmingUp",
+										medtronicDevice.get("isWarmingUp"));
 							}
 						}
 					}
-				}
-				log.debug("Uri TO CHANGE user " + user + " host "
-						+ source + " password " + 
-						password);
-				
-				if (bAchieved) {
-					MongoCredential mc = MongoCredential
-							.createMongoCRCredential(user, source,
-									password.toCharArray());
-					ServerAddress sa = new ServerAddress(host, iPort);
-					List<MongoCredential> lcredential = new ArrayList<MongoCredential>();
-					lcredential.add(mc);
-					if (sa != null && sa.getHost() != null
-							&& sa.getHost().indexOf("localhost") < 0) {
-						client = new MongoClient(sa, lcredential, b.build());
+					if (collectionName != null) {
+						
+						log.info("retrieving data");
+						filter = "q={'type':{$ne:'mbg'}}";
+						sort = "s={'date':-1}";
+						JSONArray recordCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "1", apiKey);
+						filter = "q={'type':{$eq:'mbg'}}";
+						JSONArray recordMbgCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "1", apiKey);
+						log.info("data retrieved");
+						if (recordCursor != null && recordCursor.length() > 0) {
+							JSONObject record = (JSONObject)recordCursor.get(0);
+							if (record.has("date"))
+								result.put("date", record.get("date"));
+							if (record.has("dateString"))
+								result.put("dateString", record.get("dateString"));
+							if (record.has("device"))
+								result.put("device", record.get("device"));
+							if (record.has("sgv"))
+								result.put("sgv", record.get("sgv"));
+							if (record.has("direction"))
+								result.put("direction", record.get("direction"));
 
-					}
-				}
-				// client = new MongoClient(uri);
-				MongoClientURI uri = new MongoClientURI(dbURI.trim());
-				// get db
-				DB db = client.getDB(uri.getDatabase());
-
-				// get collection
-				DBCollection dexcomData = null;
-				// DBCollection glucomData = null;
-				DBCollection deviceData = db
-						.getCollection(devicesCollectionName);
-				DBObject medtronicDevice = null;
-				DBObject record = null;
-				DBObject recordMbg = null;
-				if (deviceData != null
-						&& cgmSelected == Constants.MEDTRONIC_CGM) {
-					DBCursor deviceCursor = deviceData
-							.find(new BasicDBObject("deviceId", prefs
-									.getString("medtronic_cgm_id_widget", "")));
-					if (deviceCursor.hasNext()) {
-						medtronicDevice = deviceCursor.next();
-						if (medtronicDevice.containsField("insulinLeft")) {
-							result.put("insulinLeft",
-									medtronicDevice.get("insulinLeft"));
+							if (cgmSelected == Constants.MEDTRONIC_CGM) {
+								if (record.has("calibrationStatus"))
+									result.put("calibrationStatus",
+											record.get("calibrationStatus"));
+								if (record.has("isCalibrating"))
+									result.put("isCalibrating",
+											record.get("isCalibrating"));
+							}
 						}
-						if (medtronicDevice.containsField("alarm")) {
-							result.put("alarm", medtronicDevice.get("alarm"));
-						}
-						if (medtronicDevice.containsField("batteryStatus")) {
-							result.put("batteryStatus",
-									medtronicDevice.get("batteryStatus"));
-						}
-						if (medtronicDevice.containsField("batteryVoltage")) {
-							result.put("batteryVoltage",
-									medtronicDevice.get("batteryVoltage"));
-						}
-						if (medtronicDevice.containsField("isWarmingUp")) {
-							result.put("isWarmingUp",
-									medtronicDevice.get("isWarmingUp"));
+						if (recordMbgCursor != null && recordMbgCursor.length() > 0) {
+							JSONObject recordMbg = (JSONObject)recordMbgCursor.get(0);
+							if (recordMbg.has("date"))
+								resultMbg.put("date", recordMbg.get("date"));
+							if (recordMbg.has("dateString"))
+								resultMbg.put("dateString",
+										recordMbg.get("dateString"));
+							if (recordMbg.has("mbg"))
+								resultMbg.put("mbg", recordMbg.get("mbg"));
 						}
 					}
-				}
-				if (collectionName != null) {
-					dexcomData = db.getCollection(collectionName.trim());
-					log.info("retrieving data");
-					DBCursor dexcomCursor = dexcomData
-							.find(QueryBuilder.start("type").notEquals("mbg")
-									.get()).sort(new BasicDBObject("date", -1))
-							.limit(1);
-					DBCursor mbgCursor = dexcomData
-							.find(QueryBuilder.start("type").is("mbg").get())
-							.sort(new BasicDBObject("date", -1)).limit(1);
-					log.info("data retrieved");
-					if (dexcomCursor.hasNext()) {
-						record = dexcomCursor.next();
-						if (record.containsField("date"))
-							result.put("date", record.get("date"));
-						if (record.containsField("dateString"))
-							result.put("dateString", record.get("dateString"));
-						if (record.containsField("device"))
-							result.put("device", record.get("device"));
-						if (record.containsField("sgv"))
-							result.put("sgv", record.get("sgv"));
-						if (record.containsField("direction"))
-							result.put("direction", record.get("direction"));
-
-						if (cgmSelected == Constants.MEDTRONIC_CGM) {
-							if (record.containsField("calibrationStatus"))
-								result.put("calibrationStatus",
-										record.get("calibrationStatus"));
-							if (record.containsField("isCalibrating"))
-								result.put("isCalibrating",
-										record.get("isCalibrating"));
-						}
-					}
-					if (mbgCursor.hasNext()) {
-						recordMbg = mbgCursor.next();
-						if (recordMbg.containsField("date"))
-							resultMbg.put("date", recordMbg.get("date"));
-						if (recordMbg.containsField("dateString"))
-							resultMbg.put("dateString",
-									recordMbg.get("dateString"));
-						if (recordMbg.containsField("mbg"))
-							resultMbg.put("mbg", recordMbg.get("mbg"));
-					}
-				}
-				/*
-				 * if (gdCollectionName != null){ glucomData =
-				 * db.getCollection(gdCollectionName.trim());
-				 * glucomData.find().sort(new BasicDBObject("_id",-1)).limit(1);
-				 * }
-				 */
-
-				DBCollection dsCollection = db.getCollection(dsCollectionName);
-				DBObject deviceStatus = null;
-				if (dsCollection != null) {
-					DBCursor cursorDeviceStatus = dsCollection.find().sort(
-							new BasicDBObject("created_at", -1));
-					if (cursorDeviceStatus.hasNext()) {
-						deviceStatus = cursorDeviceStatus.next();
-						if (deviceStatus.containsField("uploaderBattery"))
+					sort = "s={'created_at':-1}";
+					JSONArray deviceStatusCursor = doGetRequest(httpclient, dsCollectioncUrl, null, sort, "1", apiKey);
+					if (deviceStatusCursor != null && deviceStatusCursor.length() > 0) {
+						JSONObject deviceStatus = (JSONObject)deviceStatusCursor.get(0);
+						if (deviceStatus.has("uploaderBattery"))
 							result.put("uploaderBattery",
 									deviceStatus.get("uploaderBattery"));
-						if (deviceStatus.containsField("created_at"))
+						if (deviceStatus.has("created_at"))
 							result.put("created_at",
 									deviceStatus.get("created_at"));
 					}
-					cursorDeviceStatus.close();
 				}
-				// Uploading devicestatus
-				client.close();
+				// connect to db
+				
 			} catch (Exception e) {
 				if (client != null)
 					client.close();
