@@ -44,10 +44,12 @@ public class CGMWidgetUpdater extends Service {
 	private boolean iUnderstand = false;
 	private int currentAction = Constants.ACTION_SHOW_PHONEDATA;
 	private String uuid = null;
+	private SharedPreferences settings = null;
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		settings  = getBaseContext().getSharedPreferences("widget_prefs", 0);
 		log.info("CREATEEEEEEE");
 		 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 	        // Perform this loop procedure for each App Widget that belongs to this provider
@@ -152,7 +154,7 @@ public class CGMWidgetUpdater extends Service {
 			return;
 		}
 		
-		dwHelper = new DownloadHelper(getBaseContext(), cgmSelected, prefs);
+		dwHelper = new DownloadHelper(getBaseContext(), cgmSelected, prefs, settings);
 		dwHelper.setPrefs(prefs);
 		SharedPreferences settings = getBaseContext().getSharedPreferences("widget_prefs", 0);
 		

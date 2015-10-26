@@ -84,6 +84,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	Context context;
 	private int cgmSelected = Constants.DEXCOMG4;
 	private SharedPreferences prefs = null;
+	private SharedPreferences settings = null;
 	public boolean isCalculating = false;
 	public JSONObject finalResult = null;
 	public ToggleRunnableAction mToggleRunnableAction = null;
@@ -97,8 +98,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 * @param prefs
 	 *            , Shared preferences.
 	 */
-	public DownloadHelper(Context context, SharedPreferences prefs) {
-		this(context, Constants.DEXCOMG4, prefs);
+	public DownloadHelper(Context context, SharedPreferences prefs, SharedPreferences settings) {
+		this(context, Constants.DEXCOMG4, prefs, settings);
 	}
 
 	/**
@@ -112,10 +113,11 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	 *            , Shared preferences.
 	 */
 	public DownloadHelper(Context context, int cgmSelected,
-			SharedPreferences prefs) {
+			SharedPreferences prefs, SharedPreferences settings) {
 		this.context = context;
 		this.cgmSelected = cgmSelected;
 		this.prefs = prefs;
+		this.settings = settings;
 
 	}
 	
@@ -133,6 +135,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			 query += limit + "&";
 		 }
 		    try {
+		    	System.out.println(query);
 				nUri = new URI("https", null, "api.mongolab.com", 443, url, query + "apiKey="+apiKey,null);
 			} catch (URISyntaxException e2) {
 				// TODO Auto-generated catch block
@@ -140,7 +143,6 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 			}
 		    //URIUtils.
 		    HttpGet getRequest = new HttpGet(nUri);
-		    HttpPost postRequest = null;
 		    getRequest.addHeader("accept", "application/json");
 		    try {
 				HttpResponse response = client.execute(getRequest);
@@ -161,69 +163,6 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				e2.printStackTrace();
 			}
 		return result;
-	}
-	
-	private boolean doPutRequest(HttpClient client, String url, String filter, String apiKey, JSONObject data){
-		 String query = "";
-		 if (filter != null && filter.length() > 0) {
-			 query += filter + "&";
-		 }
-	
-		try {
-			URI nUri = null;
-		    try {
-				nUri = new URI("https", null, "api.mongolab.com", 443, url, query + "&apiKey="+apiKey,null);
-			} catch (URISyntaxException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-				return false;
-			}
-			HttpPut putRequest = new HttpPut(nUri);
-			putRequest.setHeader("Accept", "application/json");
-			putRequest.setHeader("Content-type", "application/json");
-	        StringEntity se = new StringEntity(data.toString());
-	        putRequest.setEntity(se);
-	        HttpResponse resp = client.execute(putRequest);
-	        if (resp.getStatusLine().getStatusCode() > 201) {
-	        	Log.e("UploaderHelper", "The can't be uploaded");
-				log.error("The record can't be uploaded Code: "+resp.getStatusLine().getStatusCode());
-				return false;
-	        }
-		}catch(IllegalArgumentException ex){
-			log.error("UploaderHelper", "Illegal record");
-			return false;
-		}catch (Exception e){
-			Log.e("UploaderHelper", "The retried can't be uploaded");
-			log.error("The retried record can't be uploaded ", e);
-			return false;
-		}
-		return true;
-	}
-	
-	private boolean doPostRequest(HttpClient client, String url, String apiKey, JSONObject data){
-		URI nUri = null;
-		try {
-			nUri = new URI("https", null, "api.mongolab.com", 443, url, "apiKey="+apiKey,null);
-			HttpPost postRequest = new HttpPost(nUri);
-			postRequest.setHeader("Accept", "application/json");
-	        postRequest.setHeader("Content-type", "application/json");
-	        StringEntity se = new StringEntity(data.toString());
-	        postRequest.setEntity(se);
-	        HttpResponse resp = client.execute(postRequest);
-	        if (resp.getStatusLine().getStatusCode() > 201) {
-	        	Log.e("UploaderHelper", "The can't be uploaded");
-				log.error("The record can't be uploaded Code: "+resp.getStatusLine().getStatusCode());
-				return false;
-	        }
-		}catch(IllegalArgumentException ex){
-			log.error("UploaderHelper", "Illegal record");
-			return false;
-		}catch (Exception e){
-			Log.e("UploaderHelper", "The retried can't be uploaded");
-			log.error("The retried record can't be uploaded ", e);
-			return false;
-		}
-		return true;
 	}
 	
 	private static String convertStreamToString(InputStream is) {
@@ -463,7 +402,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					
 					if (cgmSelected == Constants.MEDTRONIC_CGM) {
 						filter = "q={'deviceId':{$eq:'"+prefs.getString("medtronic_cgm_id_widget", "")+"'}}";
-						JSONArray medtronicDeviceCursor = doGetRequest(httpclient, deviceStatusUrl, filter, null, "1", apiKey);
+						JSONArray medtronicDeviceCursor = doGetRequest(httpclient, deviceStatusUrl, filter, null, "l=1", apiKey);
 						if (medtronicDeviceCursor != null && medtronicDeviceCursor.length() > 0) {
 							JSONObject medtronicDevice = (JSONObject)medtronicDeviceCursor.get(0);
 							if (medtronicDevice.has("insulinLeft")) {
@@ -492,9 +431,9 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						log.info("retrieving data");
 						filter = "q={'type':{$ne:'mbg'}}";
 						sort = "s={'date':-1}";
-						JSONArray recordCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "1", apiKey);
+						JSONArray recordCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "l=1", apiKey);
 						filter = "q={'type':{$eq:'mbg'}}";
-						JSONArray recordMbgCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "1", apiKey);
+						JSONArray recordMbgCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "l=1", apiKey);
 						log.info("data retrieved");
 						if (recordCursor != null && recordCursor.length() > 0) {
 							JSONObject record = (JSONObject)recordCursor.get(0);
@@ -530,7 +469,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						}
 					}
 					sort = "s={'created_at':-1}";
-					JSONArray deviceStatusCursor = doGetRequest(httpclient, dsCollectioncUrl, null, sort, "1", apiKey);
+					JSONArray deviceStatusCursor = doGetRequest(httpclient, dsCollectioncUrl, null, sort, "l=1", apiKey);
 					if (deviceStatusCursor != null && deviceStatusCursor.length() > 0) {
 						JSONObject deviceStatus = (JSONObject)deviceStatusCursor.get(0);
 						if (deviceStatus.has("uploaderBattery"))
@@ -579,6 +518,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	@Override
 	protected Void doInBackground(Object... arg0) {
 		log.info("DO IN BACKGROUND");
+		long current2 = System.currentTimeMillis();
+		settings.edit().putLong("widget_ref_watch", current2).commit();
 		if (arg0.length == 3) {
 			ComponentName thisWidget = null;
 			AppWidgetManager manager = null;
@@ -633,6 +574,8 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				views.setOnClickPendingIntent(R.id.widgetSetting, pendingIntent);
 			}
 			finalResult = doMongoDownload();
+			current2 = System.currentTimeMillis();
+			settings.edit().putLong("widget_ref_watch", current2).commit();
 			JSONObject result = new JSONObject();
 			if (finalResult != null && isOnline()){
 				log.info("Final Result not null");
@@ -695,11 +638,14 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 					manager.updateAppWidget(thisWidget, views);
 			
 		}
+		
 		/*
 		 * Intent intent = new Intent(context.getApplicationContext(),
 		 * AlertActivity.class); intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		 * context.getApplicationContext().startActivity(intent);
 		 */
+		current2 = System.currentTimeMillis();
+		settings.edit().putLong("widget_ref_watch", current2).commit();
 		return null;
 	}
 

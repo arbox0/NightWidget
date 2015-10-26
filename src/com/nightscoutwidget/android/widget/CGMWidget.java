@@ -56,7 +56,7 @@ public class CGMWidget extends AppWidgetProvider {
 		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
 		 settings.edit().putString("widgetTag", "nightWidget_030215").commit();
 		 settings.edit().putInt("widgetId", 1717030215).commit();
-		 settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
+		// settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
 		 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
 		 LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
 		    StatusPrinter.print(lc);
@@ -79,7 +79,7 @@ public class CGMWidget extends AppWidgetProvider {
 	        
 			 settings.edit().putString("widgetTag", "nightWidget_030215").commit();
 			 settings.edit().putInt("widgetId", 1717030215).commit();
-			 settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
+			// settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
 			 int screen = settings.getInt("widget_screen", 0);
             RemoteViews views = null;
             if (screen == 0){
@@ -154,31 +154,33 @@ public class CGMWidget extends AppWidgetProvider {
             if (service == null)  
             {  
                 service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
-            }  
-            if (prefs.contains("refreshPeriod_widget")){
-            	String type = prefs.getString("refreshPeriod_widget", "2");
-            	long time = Constants.TIME_2_MIN_IN_MS;
-            	if (type.equalsIgnoreCase("1"))
-            		time = Constants.TIME_1_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("3"))
-            		time = Constants.TIME_3_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("4"))
-            		time = Constants.TIME_4_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("5"))
-            		time = Constants.TIME_5_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("6"))
-            		time = Constants.TIME_10_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("7"))
-            		time = Constants.TIME_20_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("8"))
-            		time = Constants.TIME_25_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("9"))
-            		time = Constants.TIME_30_MIN_IN_MS;
-            	else if (type.equalsIgnoreCase("10"))
-            		time = Constants.TIME_60_MIN_IN_MS;
-            	else
-            		time = Constants.TIME_2_MIN_IN_MS;
-            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
+              
+	            if (prefs.contains("refreshPeriod_widget")){
+	            	String type = prefs.getString("refreshPeriod_widget", "2");
+	            	long time = Constants.TIME_2_MIN_IN_MS;
+	            	if (type.equalsIgnoreCase("1"))
+	            		time = Constants.TIME_1_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("3"))
+	            		time = Constants.TIME_3_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("4"))
+	            		time = Constants.TIME_4_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("5"))
+	            		time = Constants.TIME_5_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("6"))
+	            		time = Constants.TIME_10_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("7"))
+	            		time = Constants.TIME_20_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("8"))
+	            		time = Constants.TIME_25_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("9"))
+	            		time = Constants.TIME_30_MIN_IN_MS;
+	            	else if (type.equalsIgnoreCase("10"))
+	            		time = Constants.TIME_60_MIN_IN_MS;
+	            	else
+	            		time = Constants.TIME_2_MIN_IN_MS;
+	            	settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
+	            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
+	            }
             }
             if (mWatchAction != null && mHandlerWatchService != null){
             	mHandlerWatchService.removeCallbacks(mWatchAction);
@@ -466,6 +468,7 @@ public class CGMWidget extends AppWidgetProvider {
 				 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
 				 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
             	String type = prefs.getString("refreshPeriod_widget", "2");
+            	System.out.println("TYPE =" +type);
             	long time = Constants.TIME_2_MIN_IN_MS;
             	if (type.equalsIgnoreCase("1"))
             		time = Constants.TIME_1_MIN_IN_MS;
@@ -494,7 +497,7 @@ public class CGMWidget extends AppWidgetProvider {
 					        PendingIntent.FLAG_NO_CREATE) != null);
 				 long current = System.currentTimeMillis();
 				 boolean refresh = (current - settings.getLong("widget_ref_watch", current)) >= (time + 15000);
-				 
+				 System.out.println("refresh?? =" +refresh);
 				 
 				 final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 				 if (refresh){
@@ -518,6 +521,7 @@ public class CGMWidget extends AppWidgetProvider {
 				log.info("WatchTask "+ alarmUp+ " "+(current - settings.getLong("widget_ref_watch", current))+" "+ time);
 				 if (!alarmUp){
 					 log.warn("ALARM IS DOWN I MUST REACTIVATE");
+					System.out.println("ALARM IS DOWN I MUST REACTIVATE");
 					 final Calendar TIME = Calendar.getInstance();  
 			            TIME.set(Calendar.MINUTE, 0);  
 			            TIME.set(Calendar.SECOND, 0);  
