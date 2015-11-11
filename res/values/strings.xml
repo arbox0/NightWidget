@@ -19,6 +19,7 @@
     <string name="insulin_label">insulin:</string>
     <string name="alert_thresholds">Alert Thresholds</string>
     <string name="upper_warning">Upper Warning</string>
+    <string name="batt_warning">Battery Warning</string>
     <string name="lower_warning">Lower Warning</string>
     <string name="upper_alarm">Upper Alarm</string>
     <string name="lower_alarm">Lower Alarm</string>
@@ -26,6 +27,7 @@
     <string name="lower_warning_defval">80</string>
     <string name="upper_alarm_defval">170</string>
     <string name="lower_alarm_defval">70</string>
+    <string name="batt_threshold_defval">15</string>
     <string name="close">Close Alert</string>
     <string name="alert">Alert</string>
     <string name="mbg_label">Last MBG:</string>

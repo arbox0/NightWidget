@@ -60,6 +60,8 @@ public class AlertActivity extends Activity {
         String alarm_ringtone = prefs.getString("alarm_ringtone_widget", "");
         String alarmerror_ringtone = prefs.getString("alarmerror_ringtone_widget", "");
 		String warning_ringtone = prefs.getString("warning_ringtone_widget", "");
+		String battery_ringtone = prefs.getString("batt_ringtone_widget", "");
+		int batt_threshold = Integer.parseInt(prefs.getString("batt_threshold_widget", "15"));
 		String sgv = prefs.getString("sgv_widget", "");
 		vibrationActive = prefs.getBoolean("vibrationActive_widget", true);
 		int type = prefs.getInt("alarmType_widget", Constants.CONNECTION_LOST);
@@ -100,6 +102,11 @@ public class AlertActivity extends Activity {
         	label = "ALARM";
         	text = "Error value on SGV\nreceived value:"+sgv;
         	etvData.setText(""+(prefs.getLong("alarm_sgv_reenable_widget", 120*60000)/60000));
+        } else if (type == Constants.BATTERY_LOW){
+        	ringTone = battery_ringtone;
+        	label = "ALARM";
+        	text = "BATTERY LOW! CURRENT VALUE: "+batt_threshold+"%";
+        	etvData.setText(""+(prefs.getLong("batt_reenable_widget", 120*60000)/60000));
         }
         TextView tvlabel = (TextView)findViewById(R.id.alarm_label);
         tvlabel.setText(label);
@@ -115,7 +122,7 @@ public class AlertActivity extends Activity {
             public void onClick(View v) {
             	int type = prefs.getInt("alarmType_widget", Constants.CONNECTION_LOST);
             	SharedPreferences.Editor editor  = prefs.edit();
-            	if (type != Constants.CONNECTION_LOST)
+            	if (type != Constants.CONNECTION_LOST && type != Constants.BATTERY_LOW)
             	{
 	            	if (cbEnable.isChecked()){
 	            		int waitValue = -1;
@@ -173,7 +180,7 @@ public class AlertActivity extends Activity {
         });
         	String notText = "";
 			Notification.Builder mBuilder = null;
-			if (type != Constants.CONNECTION_LOST){
+			if (type != Constants.CONNECTION_LOST && type != Constants.BATTERY_LOW){
 				notText = label+" sgv: "+sgv;
 			        mBuilder = new Notification.Builder(getBaseContext())
 			        .setSmallIcon(R.drawable.ic_launcher_little_w32)
@@ -182,13 +189,23 @@ public class AlertActivity extends Activity {
 			        .setTicker("SGV: "+sgv)
 			        .setLargeIcon((((BitmapDrawable)getBaseContext().getResources().getDrawable(R.drawable.ic_launcher)).getBitmap()));
 			}else{
-				notText = label+": conn. lost";
-			    mBuilder = new Notification.Builder(getBaseContext())
-		        .setSmallIcon(R.drawable.ic_launcher_little_w32)
-		        .setContentTitle(label+": conn. lost")
-		        .setContentText(sgv)
-		        .setTicker("SGV: conn. lost")
-		        .setLargeIcon((((BitmapDrawable)getBaseContext().getResources().getDrawable(R.drawable.ic_launcher)).getBitmap()));
+				if (type == Constants.CONNECTION_LOST) {
+					notText = label+": conn. lost";
+				    mBuilder = new Notification.Builder(getBaseContext())
+			        .setSmallIcon(R.drawable.ic_launcher_little_w32)
+			        .setContentTitle(label+": conn. lost")
+			        .setContentText(sgv)
+			        .setTicker("SGV: conn. lost")
+			        .setLargeIcon((((BitmapDrawable)getBaseContext().getResources().getDrawable(R.drawable.ic_launcher)).getBitmap()));
+				} else {
+					notText = label+": batt. <= "+batt_threshold+"%";
+				    mBuilder = new Notification.Builder(getBaseContext())
+			        .setSmallIcon(R.drawable.ic_launcher_little_w32)
+			        .setContentTitle(label+": batt. <= "+batt_threshold+"%")
+			        .setContentText(sgv)
+			        .setTicker("batt. LOW")
+			        .setLargeIcon((((BitmapDrawable)getBaseContext().getResources().getDrawable(R.drawable.ic_launcher)).getBitmap()));
+				}
 			}
 			 RemoteViews contentView=new RemoteViews(getBaseContext().getPackageName(), R.layout.not_layout);
 		     mBuilder.setContent(contentView);
@@ -208,7 +225,7 @@ public class AlertActivity extends Activity {
 			int mId =  settings.getInt("widgetId", 1717030215);
 			mNotificationManager.notify(mTag, mId, mBuilder.build());
 	
-        if (type == Constants.CONNECTION_LOST){
+        if (type == Constants.CONNECTION_LOST || type == Constants.BATTERY_LOW){
         	cbEnable.setChecked(false);
         	cbEnable.setVisibility(View.GONE);
         	tvAfter.setVisibility(View.GONE);
@@ -287,7 +304,7 @@ public class AlertActivity extends Activity {
          final CheckBox cbEnable = (CheckBox)findViewById(R.id.enableAlarm);
          int type = prefs.getInt("alarmType_widget", Constants.CONNECTION_LOST);
      	SharedPreferences.Editor editor  = prefs.edit();
-     	if (type != Constants.CONNECTION_LOST){
+     	if (type != Constants.CONNECTION_LOST && type != Constants.BATTERY_LOW){
 	     	if (cbEnable.isChecked()){
 	     		int waitValue = -1;
 	     		try {

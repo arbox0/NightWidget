@@ -56,7 +56,8 @@ public class CGMWidget extends AppWidgetProvider {
 		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
 		 settings.edit().putString("widgetTag", "nightWidget_030215").commit();
 		 settings.edit().putInt("widgetId", 1717030215).commit();
-		// settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
+		 settings.edit().remove("widget_ref_watch").commit();
+		 // settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
 		 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
 		 LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
 		    StatusPrinter.print(lc);
@@ -178,6 +179,7 @@ public class CGMWidget extends AppWidgetProvider {
 	            		time = Constants.TIME_60_MIN_IN_MS;
 	            	else
 	            		time = Constants.TIME_2_MIN_IN_MS;
+	            	settings.edit().putBoolean("isStartingService", true).commit();
 	            	settings.edit().putLong("widget_ref_watch", System.currentTimeMillis()).commit();
 	            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
 	            }
@@ -306,7 +308,8 @@ public class CGMWidget extends AppWidgetProvider {
 	            TIME.set(Calendar.MINUTE, 0);  
 	            TIME.set(Calendar.SECOND, 0);  
 	            TIME.set(Calendar.MILLISECOND, 0);  
-	         service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
+	         service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);
+	         settings.edit().putBoolean("isStartingService", true).commit();
 	            	m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
 	         log.warn("ALARM IS DOWN I MUST REACTIVATE");
 		 }
@@ -527,7 +530,7 @@ public class CGMWidget extends AppWidgetProvider {
 			            TIME.set(Calendar.SECOND, 0);  
 			            TIME.set(Calendar.MILLISECOND, 0);  
 			         service = PendingIntent.getService(context, 27, in, PendingIntent.FLAG_CANCEL_CURRENT);  
-			         
+			         settings.edit().putBoolean("isStartingService", true).commit();
 			         m.setRepeating(AlarmManager.RTC, TIME.getTime().getTime(), time, service);
 			         
 			         log.warn("ALARM REACTIVATED");

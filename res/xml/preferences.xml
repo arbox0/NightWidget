@@ -153,6 +153,31 @@
 		    android:showSilent="false"
 		    android:defaultValue="content://settings/system/notification_sound"
 		    />
+	    <com.nightscoutwidget.android.utils.CustomSwitchPreference
+	            android:title="Battery Alarm"
+	            android:key="batt_alarm_widget"
+	            android:disableDependentsState="false"
+	            android:defaultValue="true"
+	            android:switchTextOn="ON"
+	            android:switchTextOff="OFF"
+	            android:summaryOn="A sound alert will be raised when battery threshold is exceeded"
+	            android:summaryOff="No sound alert will be raised when battery threshold is exceeded">
+	    </com.nightscoutwidget.android.utils.CustomSwitchPreference>
+	    <RingtonePreference
+		    android:title="Choose Alarm Sound"
+		    android:dependency="batt_alarm_widget"
+		    android:key="batt_ringtone_widget"
+		    android:ringtoneType="all"
+		    android:showDefault="true"
+		    android:showSilent="false"
+		    android:defaultValue="content://settings/system/notification_sound"
+		    />
+	     <EditTextPreference
+            android:title="@string/batt_warning"
+            android:key="batt_threshold_widget"
+            android:dialogTitle="Battery Threshold (%)"
+            android:inputType="numberDecimal"
+            android:defaultValue="@string/batt_threshold_defval"/>
          <com.nightscoutwidget.android.utils.CustomSwitchPreference
 	            android:title="Sound Alarm"
 	            android:key="sound_alarm_widget"

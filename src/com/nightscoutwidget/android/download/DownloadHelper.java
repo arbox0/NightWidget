@@ -121,12 +121,15 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 
 	}
 	
-	private JSONArray doGetRequest(HttpClient client, String url, String filter, String sort, String limit, String apiKey){
+	private JSONArray doGetRequest(HttpClient client, String url, String filter, String fields, String sort, String limit, String apiKey){
 		JSONArray result = null;
 		 URI nUri = null;
 		 String query = "";
 		 if (filter != null && filter.length() > 0) {
 			 query += filter + "&";
+		 }
+		 if (fields != null && fields.length() > 0) {
+			 query += fields + "&";
 		 }
 		 if (sort != null && sort.length() > 0) {
 			 query += sort + "&";
@@ -141,8 +144,10 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
 			}
+		   
 		    //URIUtils.
 		    HttpGet getRequest = new HttpGet(nUri);
+		    getRequest.addHeader("Accept-Encoding", "gzip, deflate");
 		    getRequest.addHeader("accept", "application/json");
 		    try {
 				HttpResponse response = client.execute(getRequest);
@@ -201,7 +206,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 		// String gdCollectionName = prefs.getString("gcdCollectionName", null);
 		HttpParams params = new BasicHttpParams();
 	    //HttpConnectionParams.setSoTimeout(params, 60000);
-	    HttpConnectionParams.setConnectionTimeout(params, 60000);
+	    HttpConnectionParams.setConnectionTimeout(params, 90000);
 		String devicesCollectionName = "devices";
 		DefaultHttpClient httpclient = new DefaultHttpClient(params);
 	    String dbName = "";
@@ -400,9 +405,9 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 							client.close();
 				} else {
 					
-					if (cgmSelected == Constants.MEDTRONIC_CGM) {
+					/*if (cgmSelected == Constants.MEDTRONIC_CGM ) {
 						filter = "q={'deviceId':{$eq:'"+prefs.getString("medtronic_cgm_id_widget", "")+"'}}";
-						JSONArray medtronicDeviceCursor = doGetRequest(httpclient, deviceStatusUrl, filter, null, "l=1", apiKey);
+						JSONArray medtronicDeviceCursor = doGetRequest(httpclient, deviceStatusUrl, filter, "f={'_id':0,'name':0,'temporaryBasal':0,'date':0,'deviceId':0,'status':0}","s={'date':-1}", "l=1", apiKey);
 						if (medtronicDeviceCursor != null && medtronicDeviceCursor.length() > 0) {
 							JSONObject medtronicDevice = (JSONObject)medtronicDeviceCursor.get(0);
 							if (medtronicDevice.has("insulinLeft")) {
@@ -425,15 +430,15 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 										medtronicDevice.get("isWarmingUp"));
 							}
 						}
-					}
+					}*/
 					if (collectionName != null) {
 						
 						log.info("retrieving data");
 						filter = "q={'type':{$ne:'mbg'}}";
 						sort = "s={'date':-1}";
-						JSONArray recordCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "l=1", apiKey);
+						JSONArray recordCursor = doGetRequest(httpclient, entriesUrl, filter,"f={'_id':0,'unfilteredGlucose':0,'type':0,'calibrationFactor':0,'isig':0, 'device':0,'dateString':0}", sort, "l=1", apiKey);
 						filter = "q={'type':{$eq:'mbg'}}";
-						JSONArray recordMbgCursor = doGetRequest(httpclient, entriesUrl, filter, sort, "l=1", apiKey);
+						JSONArray recordMbgCursor = doGetRequest(httpclient, entriesUrl, filter, "f={'_id':0,'device':0,'type':0,'dateString':0}", sort, "l=1", apiKey);
 						log.info("data retrieved");
 						if (recordCursor != null && recordCursor.length() > 0) {
 							JSONObject record = (JSONObject)recordCursor.get(0);
@@ -469,7 +474,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 						}
 					}
 					sort = "s={'created_at':-1}";
-					JSONArray deviceStatusCursor = doGetRequest(httpclient, dsCollectioncUrl, null, sort, "l=1", apiKey);
+					JSONArray deviceStatusCursor = doGetRequest(httpclient, dsCollectioncUrl, null, "f={'_id':0,'created_at':0}", sort, "l=1", apiKey);
 					if (deviceStatusCursor != null && deviceStatusCursor.length() > 0) {
 						JSONObject deviceStatus = (JSONObject)deviceStatusCursor.get(0);
 						if (deviceStatus.has("uploaderBattery"))
@@ -518,7 +523,40 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 	@Override
 	protected Void doInBackground(Object... arg0) {
 		log.info("DO IN BACKGROUND");
+		boolean isStarting = settings.getBoolean("isStartingService", false);
+		settings.edit().putBoolean("isStartingService", false).commit();
 		long current2 = System.currentTimeMillis();
+		long current1 = settings.getLong("widget_ref_watch", current2);
+		if (prefs.contains("refreshPeriod_widget")){
+        	String type = prefs.getString("refreshPeriod_widget", "2");
+        	long time = Constants.TIME_2_MIN_IN_MS;
+        	if (type.equalsIgnoreCase("1"))
+        		time = Constants.TIME_1_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("3"))
+        		time = Constants.TIME_3_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("4"))
+        		time = Constants.TIME_4_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("5"))
+        		time = Constants.TIME_5_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("6"))
+        		time = Constants.TIME_10_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("7"))
+        		time = Constants.TIME_20_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("8"))
+        		time = Constants.TIME_25_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("9"))
+        		time = Constants.TIME_30_MIN_IN_MS;
+        	else if (type.equalsIgnoreCase("10"))
+        		time = Constants.TIME_60_MIN_IN_MS;
+        	else
+        		time = Constants.TIME_2_MIN_IN_MS;
+        	System.out.println("current2 = "+current2+" current1 = "+current1+"  time "+(time - 15000));
+        	if (!isStarting && current2 != current1 && current2 - current1 < (time - 15000)){
+        		System.out.println("TOO EARLY");
+    			return null;
+    		}
+		}
+		
 		settings.edit().putLong("widget_ref_watch", current2).commit();
 		if (arg0.length == 3) {
 			ComponentName thisWidget = null;
@@ -934,7 +972,7 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 				if (result.has("uploaderBattery")) {
 					int phoneBatt = result.getInt("uploaderBattery");
 					if (phoneBatt >= 0) {
-	
+						
 						views.setViewVisibility(R.id.phoneBattery, View.VISIBLE);
 						views.setViewVisibility(R.id.phone_battery_label_id,
 								View.VISIBLE);
@@ -952,6 +990,40 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 									R.drawable.battery_low_icon);
 						views.setTextViewText(R.id.phone_battery_text_id, phoneBatt
 								+ "%");
+						boolean battTimeAlarmRaised = false;
+						boolean alarms_active = prefs.getBoolean("alarms_active_widget", true);
+						boolean raiseBattAlarm = prefs.getBoolean("batt_alarm_widget", true);
+						int batt_threshold = Integer.parseInt(prefs.getString("batt_threshold_widget", "15"));
+						if (alarms_active) {
+							if (prefs.contains("battAlarmRaised_widget"))
+								battTimeAlarmRaised = prefs.getBoolean("battAlarmRaised_widget",
+										false);
+							if (phoneBatt >= batt_threshold) {
+								if (!battTimeAlarmRaised && raiseBattAlarm) {
+									SharedPreferences.Editor editor = prefs.edit();
+									editor.putInt("alarmType_widget", Constants.BATTERY_LOW);
+									editor.putBoolean("battAlarmRaised_widget", true);
+									editor.commit();
+									// intent to call the activity which shows on ringing
+									Intent intent = new Intent(context.getApplicationContext(),
+											AlertActivity.class);
+									intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+									context.getApplicationContext().startActivity(intent);
+
+									// display that alarm is ringing
+
+								} else if (!raiseBattAlarm) {
+									SharedPreferences.Editor editor = prefs.edit();
+									editor.putInt("alarmType_widget", Constants.CONNECTION_LOST);
+									editor.putBoolean("battAlarmRaised_widget", true);
+									editor.commit();
+								}
+							} else {
+									SharedPreferences.Editor editor = prefs.edit();
+									editor.remove("battAlarmRaised_widget");
+									editor.commit();
+							}
+						} 
 					} else {
 						views.setViewVisibility(R.id.phoneBattery, View.GONE);
 						views.setViewVisibility(R.id.phone_battery_label_id,

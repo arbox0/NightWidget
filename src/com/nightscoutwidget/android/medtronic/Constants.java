@@ -14,6 +14,7 @@ public class Constants {
 	public static final int ALARM = 1;
 	public static final int WARNING = 2;
 	public static final int ALARM_SGV_ERROR = 3;
+	public static final int BATTERY_LOW = 4;
 	public static final int YELLOW = Color.rgb(251, 173, 0);// Color.rgb(252,
 															// 255, 20);
 
