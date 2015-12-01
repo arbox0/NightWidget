@@ -998,10 +998,11 @@ public class DownloadHelper extends AsyncTask<Object, Void, Void> {
 							if (prefs.contains("battAlarmRaised_widget"))
 								battTimeAlarmRaised = prefs.getBoolean("battAlarmRaised_widget",
 										false);
-							if (phoneBatt >= batt_threshold) {
+							if (phoneBatt < batt_threshold) {
 								if (!battTimeAlarmRaised && raiseBattAlarm) {
 									SharedPreferences.Editor editor = prefs.edit();
 									editor.putInt("alarmType_widget", Constants.BATTERY_LOW);
+									editor.putInt("battCurrent_widget", phoneBatt);
 									editor.putBoolean("battAlarmRaised_widget", true);
 									editor.commit();
 									// intent to call the activity which shows on ringing

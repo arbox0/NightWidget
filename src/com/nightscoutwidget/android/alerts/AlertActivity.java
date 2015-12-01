@@ -62,6 +62,7 @@ public class AlertActivity extends Activity {
 		String warning_ringtone = prefs.getString("warning_ringtone_widget", "");
 		String battery_ringtone = prefs.getString("batt_ringtone_widget", "");
 		int batt_threshold = Integer.parseInt(prefs.getString("batt_threshold_widget", "15"));
+		int batt_current = prefs.getInt("battCurrent_widget", batt_threshold);
 		String sgv = prefs.getString("sgv_widget", "");
 		vibrationActive = prefs.getBoolean("vibrationActive_widget", true);
 		int type = prefs.getInt("alarmType_widget", Constants.CONNECTION_LOST);
@@ -105,7 +106,7 @@ public class AlertActivity extends Activity {
         } else if (type == Constants.BATTERY_LOW){
         	ringTone = battery_ringtone;
         	label = "ALARM";
-        	text = "BATTERY LOW! CURRENT VALUE: "+batt_threshold+"%";
+        	text = "BATTERY LOW! CURRENT VALUE: "+batt_current+"%";
         	etvData.setText(""+(prefs.getLong("batt_reenable_widget", 120*60000)/60000));
         }
         TextView tvlabel = (TextView)findViewById(R.id.alarm_label);

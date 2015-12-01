@@ -66,6 +66,12 @@ public class CGMWidget extends AppWidgetProvider {
 		 if (appWidgetIDs.length > 0)
 		 {
 			 log.info("ENABLE Length "+appWidgetIDs.length);
+			 for (int i = 0; i < appWidgetIDs.length ; i++){
+				 String key = "widget_configuring_"+appWidgetIDs[i];
+				 if (settings.contains(key)){
+					 settings.edit().remove(key).commit();
+				 }
+			 }
 			 String key = "widget_configuring_"+appWidgetIDs[0];
 			 if (!settings.contains(key))
 				 settings.edit().putBoolean(key, true).commit();
@@ -320,14 +326,52 @@ public class CGMWidget extends AppWidgetProvider {
 	 public void onDeleted(Context context, int[] AppWidgetIds){
 		 log.info("onDeleted");
 		 SharedPreferences settings = context.getSharedPreferences("widget_prefs", 0);
-		 for (int id : AppWidgetIds){
-			 String key = String.format(Locale.US,"appwidget%d_configured", id);
-			 settings.edit().remove("widget_ops_"+id).commit();
-	         settings.edit().remove("widget_configuring_"+id).commit();
-			 log.info("onDeleted "+key);
+		 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+
+		 int[] appWidgetIDs = appWidgetManager
+		     .getAppWidgetIds(new ComponentName(context, CGMWidget.class));
+		 if (appWidgetIDs.length > 0)
+		 {
+			 log.info("DISABLE Length "+appWidgetIDs.length);
+			 String key = String.format(Locale.US,"appwidget%d_configured", appWidgetIDs[0]);
+			 settings.edit().remove("widget_ops_"+appWidgetIDs[0]).commit();
+	         settings.edit().remove("widget_configuring_"+appWidgetIDs[0]).commit();
 			 if (settings.contains(key))
 				 settings.edit().remove(key).commit();
 		 }
+		
+		 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+	        // Perform this loop procedure for each App Widget that belongs to this provider
+	        SharedPreferences.Editor editor= prefs.edit();
+	        editor.putBoolean("widgetEnabled", false);
+	        editor.remove("widget_uuid");
+	        editor.commit();
+	        final AlarmManager m = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);  
+	  
+	        if (service == null){
+				 log.info("ISNULL!!!!");
+			 }else
+				 m.cancel(service);
+	        final Intent in = new Intent(context, CGMWidgetUpdater.class);  
+            int i = 100;
+            
+            boolean alarmUp = (PendingIntent.getService(context, 27, in, 
+			        PendingIntent.FLAG_NO_CREATE) != null);
+            while (alarmUp && i > 0){
+            	log.warn("I AM KILLING SERVICES " +i);
+            	i--;
+            	PendingIntent pI = PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE);
+            	if (pI != null)
+            		pI.cancel();
+            	m.cancel(PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE));
+            	alarmUp = (PendingIntent.getService(context, 27, in, 
+    			        PendingIntent.FLAG_NO_CREATE) != null);
+            	service = null;
+            }
+            log.warn("I HAVE KILLED SERVICES ");
+            mHandlerWatchService.removeCallbacks(mWatchAction);
 	 }
 	 
 	 @Override
